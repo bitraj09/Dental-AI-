@@ -1,0 +1,13 @@
+
+For teaching purposes: AI to detect and highlight landmarks in dental radiographs (orthopantomograms)
+For educational use: students will select landmark, AI can say if it is correct or not
+For patient purposes: Identifying abnormalities, diseases, cavity, impacted teeth, etc
+Forensic Odontology: Estimating age using different parameters such as erupted teeth, teeth buds present, extent of root apex closure, cementum deposition, narrowing of pulp chambers.
+
+
+NABH Training App for peons, clerks, doctors, in the form of games:
+Biomedical waste disposal
+Cleaning chemical spillage
+Blood spillages
+Sequence to follow in – Code Blue, Code Red, Code Pink, etc.
+One by one will work on the mini-games
