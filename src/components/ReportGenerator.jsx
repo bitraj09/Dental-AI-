@@ -1,12 +1,118 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FiPrinter, FiDownload, FiUser, FiHash } from 'react-icons/fi';
+import { FiPrinter, FiDownload, FiUser } from 'react-icons/fi';
 import styles from './ReportGenerator.module.css';
 
 /**
- * Generates a printable / downloadable HTML report.
- * Used by both Diagnosis and Forensics modules.
+ * Draws a pie chart on a canvas and returns a data URL image.
+ * Works entirely without external libs so it renders in the print report.
+ */
+function drawPieChart(items, width = 320, height = 240) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const cx = 110, cy = height / 2, r = 85;
+    const total = items.reduce((s, i) => s + i.value, 0) || 1;
+
+    // Colors
+    const colors = ['#a855f7', '#ec4899', '#f59e0b', '#22c55e', '#6366f1', '#14b8a6', '#f97316', '#8b5cf6'];
+
+    let startAngle = -Math.PI / 2;
+    items.forEach((item, idx) => {
+        const sliceAngle = (item.value / total) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = colors[idx % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        startAngle += sliceAngle;
+    });
+
+    // Legend
+    const legendX = cx + r + 30;
+    let legendY = 30;
+    ctx.font = '12px Inter, sans-serif';
+    items.forEach((item, idx) => {
+        ctx.fillStyle = colors[idx % colors.length];
+        ctx.fillRect(legendX, legendY - 8, 12, 12);
+        ctx.fillStyle = '#334155';
+        ctx.fillText(`${item.label} (${item.value})`, legendX + 18, legendY + 1);
+        legendY += 22;
+    });
+
+    return canvas.toDataURL('image/png');
+}
+
+/**
+ * Draws a horizontal bar chart on a canvas and returns a data URL image.
+ */
+function drawBarChart(items, width = 420, height = 0) {
+    const barH = 26, gap = 8, padTop = 20, padLeft = 120, padRight = 40;
+    const calcHeight = padTop + items.length * (barH + gap) + 10;
+    height = Math.max(height, calcHeight);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    const maxVal = Math.max(...items.map(i => i.value), 1);
+    const barAreaW = width - padLeft - padRight;
+
+    items.forEach((item, idx) => {
+        const y = padTop + idx * (barH + gap);
+        const barW = (item.value / maxVal) * barAreaW;
+
+        // Label
+        ctx.fillStyle = '#475569';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(item.label.length > 16 ? item.label.slice(0, 16) + '…' : item.label, padLeft - 8, y + barH / 2 + 4);
+
+        // Bar
+        const grad = ctx.createLinearGradient(padLeft, y, padLeft + barW, y);
+        grad.addColorStop(0, '#a855f7');
+        grad.addColorStop(1, '#ec4899');
+        ctx.fillStyle = grad;
+        roundRect(ctx, padLeft, y, barW, barH, 4);
+        ctx.fill();
+
+        // Value label
+        ctx.fillStyle = '#334155';
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText(`${item.value}%`, padLeft + barW + 6, y + barH / 2 + 4);
+    });
+
+    return canvas.toDataURL('image/png');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+/**
+ * ReportGenerator component — generates printable / downloadable HTML report
+ * with embedded Chart.js-style charts rendered as canvas images.
  *
  * Props:
  * - type: 'diagnosis' | 'forensics'
@@ -17,16 +123,55 @@ export default function ReportGenerator({ type, data, image }) {
     const reportRef = useRef(null);
     const [patientName, setPatientName] = useState('');
     const [patientId, setPatientId] = useState('');
+    const [pieChartUrl, setPieChartUrl] = useState(null);
+    const [barChartUrl, setBarChartUrl] = useState(null);
 
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-IN', {
-        year: 'numeric', month: 'long', day: 'numeric',
-    });
-    const timeStr = now.toLocaleTimeString('en-IN', {
-        hour: '2-digit', minute: '2-digit',
-    });
-
+    const dateStr = now.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     const generatedId = `DAI-${Date.now().toString(36).toUpperCase()}`;
+
+    // Generate charts when data changes
+    useEffect(() => {
+        if (!data) return;
+
+        if (type === 'diagnosis' && Array.isArray(data)) {
+            // Pie chart: condition distribution by severity
+            const severityCounts = {};
+            data.forEach(f => {
+                const s = f.severity || 'unknown';
+                severityCounts[s] = (severityCounts[s] || 0) + 1;
+            });
+            const pieItems = Object.entries(severityCounts).map(([label, value]) => ({
+                label: label.charAt(0).toUpperCase() + label.slice(1),
+                value,
+            }));
+            setPieChartUrl(drawPieChart(pieItems));
+
+            // Bar chart: confidence per finding
+            const barItems = data.map(f => ({
+                label: f.name,
+                value: Math.round(f.confidence * 100),
+            }));
+            setBarChartUrl(drawBarChart(barItems));
+        }
+
+        if (type === 'forensics' && data.parameters) {
+            // Bar chart: parameter confidence
+            const barItems = data.parameters.map(p => ({
+                label: p.name,
+                value: Math.round(p.confidence * 100),
+            }));
+            setBarChartUrl(drawBarChart(barItems, 420));
+
+            // Pie chart: parameter weight distribution
+            const pieItems = data.parameters.map(p => ({
+                label: p.name,
+                value: Math.round(p.weight * 100),
+            }));
+            setPieChartUrl(drawPieChart(pieItems, 360, 260));
+        }
+    }, [data, type]);
 
     const buildReportHTML = () => {
         const content = reportRef.current;
@@ -52,14 +197,8 @@ export default function ReportGenerator({ type, data, image }) {
         const html = buildReportHTML();
         if (!html) return;
 
-        // Use an iframe instead of window.open to avoid popup blocker issues
         const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = 'none';
+        iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none';
         document.body.appendChild(iframe);
 
         const doc = iframe.contentDocument || iframe.contentWindow.document;
@@ -67,15 +206,11 @@ export default function ReportGenerator({ type, data, image }) {
         doc.write(html);
         doc.close();
 
-        // Wait for content and fonts to load before printing
         iframe.onload = () => {
             setTimeout(() => {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
-                // Clean up after print dialog closes
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 1000);
+                setTimeout(() => document.body.removeChild(iframe), 1000);
             }, 500);
         };
     };
@@ -83,7 +218,6 @@ export default function ReportGenerator({ type, data, image }) {
     const handleDownload = () => {
         const html = buildReportHTML();
         if (!html) return;
-
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -96,55 +230,28 @@ export default function ReportGenerator({ type, data, image }) {
     };
 
     return (
-        <motion.div
-            className={styles.wrapper}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-        >
+        <motion.div className={styles.wrapper} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             {/* Patient info form */}
             <div className={styles.patientForm}>
                 <h3 className={styles.formTitle}><FiUser size={16} /> Patient Information <span className={styles.optional}>(optional)</span></h3>
                 <div className={styles.formRow}>
                     <div className={styles.formField}>
                         <label className={styles.formLabel}>Patient Name</label>
-                        <input
-                            type="text"
-                            className={styles.formInput}
-                            placeholder="Enter patient name"
-                            value={patientName}
-                            onChange={(e) => setPatientName(e.target.value)}
-                        />
+                        <input type="text" className={styles.formInput} placeholder="Enter patient name" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
                     </div>
                     <div className={styles.formField}>
                         <label className={styles.formLabel}>Patient ID</label>
-                        <input
-                            type="text"
-                            className={styles.formInput}
-                            placeholder={generatedId}
-                            value={patientId}
-                            onChange={(e) => setPatientId(e.target.value)}
-                        />
+                        <input type="text" className={styles.formInput} placeholder={generatedId} value={patientId} onChange={(e) => setPatientId(e.target.value)} />
                     </div>
                 </div>
             </div>
 
             {/* Action buttons */}
             <div className={styles.actions}>
-                <motion.button
-                    className={`btn btn-primary ${styles.actionBtn}`}
-                    onClick={handlePrint}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                >
+                <motion.button className={`btn btn-primary ${styles.actionBtn}`} onClick={handlePrint} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                     <FiPrinter size={18} /> Print / Save PDF
                 </motion.button>
-                <motion.button
-                    className={`btn btn-outline ${styles.actionBtn}`}
-                    onClick={handleDownload}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                >
+                <motion.button className={`btn btn-outline ${styles.actionBtn}`} onClick={handleDownload} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                     <FiDownload size={18} /> Download HTML
                 </motion.button>
             </div>
@@ -207,6 +314,22 @@ export default function ReportGenerator({ type, data, image }) {
                     {/* ── DIAGNOSIS REPORT CONTENT ── */}
                     {type === 'diagnosis' && data && (
                         <>
+                            {/* Charts Section */}
+                            <div style={{ display: 'flex', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
+                                {pieChartUrl && (
+                                    <div style={{ flex: '1 1 280px' }}>
+                                        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 700, marginBottom: 10, color: '#334155' }}>Severity Distribution</h3>
+                                        <img src={pieChartUrl} alt="Severity Distribution" style={{ maxWidth: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: 8, background: '#fff' }} />
+                                    </div>
+                                )}
+                                {barChartUrl && (
+                                    <div style={{ flex: '1 1 320px' }}>
+                                        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 700, marginBottom: 10, color: '#334155' }}>Confidence Scores</h3>
+                                        <img src={barChartUrl} alt="Confidence Scores" style={{ maxWidth: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: 8, background: '#fff' }} />
+                                    </div>
+                                )}
+                            </div>
+
                             <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 700, marginBottom: 16, borderLeft: '4px solid #a855f7', paddingLeft: 12 }}>
                                 Findings ({data.length} condition{data.length !== 1 ? 's' : ''} detected)
                             </h2>
@@ -251,6 +374,22 @@ export default function ReportGenerator({ type, data, image }) {
                                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 4 }}>
                                     Overall Confidence: {Math.round(data.confidence * 100)}%
                                 </div>
+                            </div>
+
+                            {/* Charts Section */}
+                            <div style={{ display: 'flex', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
+                                {barChartUrl && (
+                                    <div style={{ flex: '1 1 320px' }}>
+                                        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 700, marginBottom: 10, color: '#334155' }}>Parameter Confidence</h3>
+                                        <img src={barChartUrl} alt="Parameter Confidence" style={{ maxWidth: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: 8, background: '#fff' }} />
+                                    </div>
+                                )}
+                                {pieChartUrl && (
+                                    <div style={{ flex: '1 1 280px' }}>
+                                        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 700, marginBottom: 10, color: '#334155' }}>Weight Distribution</h3>
+                                        <img src={pieChartUrl} alt="Weight Distribution" style={{ maxWidth: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: 8, background: '#fff' }} />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Parameters */}

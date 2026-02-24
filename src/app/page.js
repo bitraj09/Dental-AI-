@@ -123,7 +123,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            <Link href="/landmarks" className="btn btn-primary">
+            <Link href="/login" className="btn btn-primary">
               Get Started <FiArrowRight />
             </Link>
             <Link href="/education" className="btn btn-outline">

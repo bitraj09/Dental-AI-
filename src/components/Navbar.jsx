@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from './ThemeProvider';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSun, FiMoon, FiMenu, FiX } from 'react-icons/fi';
+import { FiSun, FiMoon, FiMenu, FiX, FiLogOut, FiUser } from 'react-icons/fi';
 import { TbDental } from 'react-icons/tb';
+import { useSession, signOut } from 'next-auth/react';
 import styles from './Navbar.module.css';
 
 const navLinks = [
@@ -14,13 +15,21 @@ const navLinks = [
     { href: '/education', label: 'Education' },
     { href: '/diagnosis', label: 'Diagnosis' },
     { href: '/forensics', label: 'Forensics' },
+    { href: '/compare', label: 'Compare' },
+    { href: '/about', label: 'About' },
 ];
 
 export default function Navbar() {
+    const { data: session } = useSession();
     const { theme, toggleTheme } = useTheme();
     const pathname = usePathname();
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 20);
@@ -93,6 +102,24 @@ export default function Navbar() {
                             </motion.div>
                         </AnimatePresence>
                     </motion.button>
+
+                    {mounted && (
+                        session ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div className={styles.userPill}>
+                                    <FiUser />
+                                    <span>{session.user.name?.split(' ')[0] || 'User'}</span>
+                                </div>
+                                <button onClick={() => signOut()} className="btn btn-ghost" title="Sign Out">
+                                    <FiLogOut size={18} />
+                                </button>
+                            </div>
+                        ) : (
+                            <Link href="/login" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
+                                Sign In
+                            </Link>
+                        )
+                    )}
 
                     <button
                         className={styles.mobileToggle}

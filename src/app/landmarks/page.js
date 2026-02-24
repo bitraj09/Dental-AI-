@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiZap, FiList, FiEye } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
+import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { detectLandmarks, simulateDelay, getImageSeed } from '@/utils/mockAI';
 import { landmarkCategories } from '@/data/landmarkData';
@@ -15,20 +16,50 @@ export default function LandmarksPage() {
     const [loading, setLoading] = useState(false);
     const [selectedLm, setSelectedLm] = useState(null);
     const [showLabels, setShowLabels] = useState(true);
+    const [aiSource, setAiSource] = useState(null);
     const imgRef = useRef(null);
 
     const handleImage = useCallback((dataUrl) => {
         setImage(dataUrl);
         setResults([]);
         setSelectedLm(null);
+        setAiSource(null);
     }, []);
 
     const handleAnalyze = async () => {
         if (!image) return;
         setLoading(true);
-        await simulateDelay(2200);
-        const seed = getImageSeed(image);
-        const detected = detectLandmarks(imgSize.w, imgSize.h, seed);
+
+        let detected;
+        let source = 'mock';
+
+        // Try Gemini API
+        try {
+            const res = await fetch('/api/gemini-landmarks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image, imageWidth: imgSize.w, imageHeight: imgSize.h }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.landmarks && data.landmarks.length > 0 && !data.error) {
+                    detected = data.landmarks;
+                    source = 'gemini';
+                }
+            }
+        } catch (err) {
+            console.warn('[Gemini Landmarks] Falling back:', err);
+        }
+
+        // Fallback to mock AI
+        if (!detected) {
+            await simulateDelay(2200);
+            const seed = getImageSeed(image);
+            detected = detectLandmarks(imgSize.w, imgSize.h, seed);
+            source = 'mock';
+        }
+
+        setAiSource(source);
         setResults(detected);
         setLoading(false);
     };
@@ -68,6 +99,7 @@ export default function LandmarksPage() {
                         style={{ maxWidth: 640, margin: '0 auto' }}
                     >
                         <ImageUploader onImageSelect={handleImage} label="Upload OPG Radiograph" />
+                        <SampleImages onSelect={handleImage} />
                     </motion.div>
                 ) : (
                     <div className={styles.workspace}>
@@ -77,6 +109,18 @@ export default function LandmarksPage() {
                                 <button className="btn btn-primary" onClick={handleAnalyze} disabled={loading || results.length > 0}>
                                     <FiZap size={18} /> {results.length > 0 ? 'Analysis Complete' : 'Detect Landmarks'}
                                 </button>
+                                {aiSource && (
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                                        padding: '4px 10px', borderRadius: 20, fontSize: '0.72rem',
+                                        fontWeight: 600,
+                                        background: aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' : 'rgba(100,116,139,0.15)',
+                                        color: aiSource === 'gemini' ? '#818cf8' : '#94a3b8',
+                                        border: `1px solid ${aiSource === 'gemini' ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                                    }}>
+                                        {aiSource === 'gemini' ? '⚡ Gemini AI' : '🖥 Mock AI'}
+                                    </span>
+                                )}
                                 {results.length > 0 && (
                                     <button className={`btn btn-ghost`} onClick={() => setShowLabels(!showLabels)}>
                                         <FiEye size={16} /> {showLabels ? 'Hide' : 'Show'} Labels

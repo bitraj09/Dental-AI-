@@ -111,6 +111,19 @@
     box-shadow: var(--shadow-glow);
 }
 
+.userPill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .mobileToggle {
     display: none;
     align-items: center;

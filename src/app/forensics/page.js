@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiActivity, FiUser, FiBarChart2, FiFileText, FiClock } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
+import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import ReportGenerator from '@/components/ReportGenerator';
 import { estimateAge, simulateDelay, getImageSeed } from '@/utils/mockAI';
@@ -14,28 +15,62 @@ export default function ForensicsPage() {
     const [result, setResult] = useState(null);
     const [showReport, setShowReport] = useState(false);
     const [history, setHistory] = useState([]);
+    const [aiSource, setAiSource] = useState(null);
+    const [summary, setSummary] = useState('');
 
     const handleImage = useCallback((dataUrl) => {
         setImage(dataUrl);
         setResult(null);
         setShowReport(false);
+        setAiSource(null);
+        setSummary('');
     }, []);
 
     const handleAnalyze = async () => {
         if (!image) return;
         setLoading(true);
-        await simulateDelay(3000);
-        const seed = getImageSeed(image);
-        const estimation = estimateAge(seed);
+
+        let estimation;
+        let source = 'mock';
+
+        // Try Gemini API
+        try {
+            const res = await fetch('/api/gemini-forensics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.result && !data.error) {
+                    estimation = data.result;
+                    source = 'gemini';
+                    setSummary(data.summary || '');
+                }
+            }
+        } catch (err) {
+            console.warn('[Gemini Forensics] Falling back:', err);
+        }
+
+        // Fallback to mock AI
+        if (!estimation) {
+            await simulateDelay(3000);
+            const seed = getImageSeed(image);
+            estimation = estimateAge(seed);
+            source = 'mock';
+            setSummary('');
+        }
+
+        setAiSource(source);
         setResult(estimation);
         setLoading(false);
-        // Save to history
         setHistory((prev) => [
             {
                 date: new Date(),
                 estimatedAge: estimation.estimatedAge,
                 range: `${estimation.minAge}–${estimation.maxAge}`,
                 confidence: estimation.confidence,
+                source,
             },
             ...prev.slice(0, 9),
         ]);
@@ -67,6 +102,7 @@ export default function ForensicsPage() {
                         style={{ maxWidth: 640, margin: '0 auto' }}
                     >
                         <ImageUploader onImageSelect={handleImage} label="Upload Radiograph for Age Estimation" />
+                        <SampleImages onSelect={handleImage} />
 
                         {/* History */}
                         {history.length > 0 && (
@@ -118,6 +154,39 @@ export default function ForensicsPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                     >
+                        {/* AI Source Badge */}
+                        {aiSource && (
+                            <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem',
+                                    fontWeight: 600,
+                                    background: aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' : 'rgba(100,116,139,0.15)',
+                                    color: aiSource === 'gemini' ? '#818cf8' : '#94a3b8',
+                                    border: `1px solid ${aiSource === 'gemini' ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                                }}>
+                                    {aiSource === 'gemini' ? '⚡ Gemini AI' : '🖥 Mock AI'}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Gemini Summary */}
+                        {summary && aiSource === 'gemini' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                style={{
+                                    marginBottom: 16, padding: '12px 16px',
+                                    background: 'rgba(99,102,241,0.08)',
+                                    border: '1px solid rgba(99,102,241,0.2)',
+                                    borderRadius: 10, fontSize: '0.85rem',
+                                    color: 'var(--text-secondary)', lineHeight: 1.5,
+                                }}
+                            >
+                                <strong style={{ color: '#818cf8' }}>🤖 Gemini Assessment:</strong> {summary}
+                            </motion.div>
+                        )}
+
                         {/* Age card */}
                         <motion.div
                             className={styles.ageCard}
