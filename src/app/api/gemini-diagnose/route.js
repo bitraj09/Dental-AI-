@@ -91,7 +91,14 @@ export async function POST(request) {
 
         // Initialize Gemini
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: {
+                temperature: 0.1,
+                topK: 1,
+                topP: 0.1,
+            }
+        });
 
         // Send image to Gemini with retry for rate limits
         const maxRetries = 3;
