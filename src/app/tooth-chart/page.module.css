@@ -1,0 +1,369 @@
+.page {
+    padding: 40px 0 80px;
+    min-height: 100vh;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.chartLayout {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr;
+    gap: 32px;
+    align-items: flex-start;
+}
+
+.chartContainer {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+}
+
+.arch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.archTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.archLine {
+    height: 1px;
+    width: 100%;
+    background: var(--border);
+    margin: 32px 0;
+    position: relative;
+}
+
+.archLine::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: var(--border);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.toothGridRow {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.toothCell {
+    width: 44px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    background: var(--bg-base);
+    transition: all 0.2s ease;
+}
+
+.toothCell.selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.toothIcon {
+    font-size: 24px;
+    filter: grayscale(1);
+    opacity: 0.5;
+    transition: all 0.2s ease;
+}
+
+.toothNumber {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Status Colors */
+.healthy .toothIcon {
+    filter: none;
+    opacity: 1;
+}
+
+.healthy {
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.caries .toothIcon {
+    filter: grayscale(1) sepia(1) hue-rotate(-50deg) saturate(5);
+    opacity: 1;
+}
+
+.caries {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.restored .toothIcon {
+    filter: sepia(1) hue-rotate(180deg) saturate(3);
+    opacity: 1;
+}
+
+.restored {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.4);
+}
+
+.endodontic .toothIcon {
+    filter: sepia(1) hue-rotate(250deg) saturate(3);
+    opacity: 1;
+}
+
+.endodontic {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.impacted .toothIcon {
+    transform: rotate(45deg);
+    opacity: 0.8;
+}
+
+.impacted {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.missing .toothIcon {
+    opacity: 0.1;
+}
+
+.missing {
+    border: 1px dashed var(--border);
+    background: transparent;
+}
+
+.missing .toothNumber {
+    opacity: 0.5;
+}
+
+/* Legend */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.813rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.legendColor {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.bgHealthy {
+    background: #22c55e;
+}
+
+.bgCaries {
+    background: #ef4444;
+}
+
+.bgRestored {
+    background: #06b6d4;
+}
+
+.bgMissing {
+    background: transparent;
+    border: 1px dashed var(--border);
+}
+
+/* Side panel */
+.sidePanel {
+    position: sticky;
+    top: 100px;
+    height: calc(100vh - 120px);
+}
+
+.infoCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.cardHeader h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.statusBadge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border: 1px solid;
+}
+
+.statusBadge.healthy {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.statusBadge.caries {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.statusBadge.restored {
+    background: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+.statusBadge.endodontic {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.statusBadge.impacted {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.statusBadge.missing {
+    background: var(--bg-base);
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+
+.infoSection {
+    margin-bottom: 24px;
+}
+
+.infoSection h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.findingList {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.findingList li {
+    margin-bottom: 4px;
+}
+
+.healthyText {
+    color: #22c55e;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.recommendationText {
+    background: rgba(99, 102, 241, 0.05);
+    border-left: 3px solid var(--primary);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.emptyState {
+    background: var(--bg-card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-xl);
+    padding: 60px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.emptyIcon {
+    color: var(--border);
+    margin-bottom: 20px;
+}
+
+.emptyState h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+.emptyState p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 1024px) {
+    .chartLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .sidePanel {
+        position: relative;
+        top: 0;
+        height: auto;
+    }
+
+    .toothGridRow {
+        flex-wrap: wrap;
+    }
+}

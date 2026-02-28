@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext({ theme: 'dark', toggleTheme: () => {} });
+const ThemeContext = createContext({ theme: 'dark', toggleTheme: () => { } });
 
 export function useTheme() {
   return useContext(ThemeContext);
@@ -24,10 +24,6 @@ export default function ThemeProvider({ children }) {
     localStorage.setItem('dental-ai-theme', next);
     document.documentElement.setAttribute('data-theme', next);
   };
-
-  if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

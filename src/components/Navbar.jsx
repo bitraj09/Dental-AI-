@@ -16,6 +16,7 @@ const navLinks = [
     { href: '/diagnosis', label: 'Diagnosis' },
     { href: '/forensics', label: 'Forensics' },
     { href: '/compare', label: 'Compare' },
+    { href: '/tooth-chart', label: 'Charting' },
     { href: '/about', label: 'About' },
 ];
 
@@ -61,7 +62,7 @@ export default function Navbar() {
                 </Link>
 
                 <div className={styles.desktopLinks}>
-                    {navLinks.map((link) => {
+                    {mounted && navLinks.map((link) => {
                         const isActive = pathname === link.href;
                         return (
                             <Link
@@ -133,7 +134,7 @@ export default function Navbar() {
 
             {/* Mobile Menu */}
             <AnimatePresence>
-                {mobileOpen && (
+                {mobileOpen && mounted && (
                     <motion.div
                         className={styles.mobileMenu}
                         initial={{ opacity: 0, height: 0 }}

@@ -84,7 +84,7 @@ const conditions = [
     {
         id: 'root_resorption',
         name: 'Root Resorption',
-        description: 'Loss of root structure, either external (surface) or internal (within the root canal).',
+        description: 'Loss of root structure, external (surface) or internal (within the root canal).',
         severityLevels: ['mild', 'moderate', 'severe'],
         recommendations: [
             'Identify and remove cause (e.g., orthodontic force)',
@@ -115,6 +115,184 @@ const conditions = [
             'Splinting if mobility is present',
         ],
         color: '#64748b',
+    },
+    {
+        id: 'hypercementosis',
+        name: 'Hypercementosis',
+        description: 'Excessive buildup of cementum on the roots of teeth, often causing bulbous root swelling.',
+        severityLevels: ['mild', 'moderate', 'severe'],
+        recommendations: [
+            'Typically requires no treatment (monitor)',
+            'Note in chart in case extraction is ever needed',
+        ],
+        color: '#0ea5e9',
+    },
+    {
+        id: 'internal_resorption',
+        name: 'Internal Resorption',
+        description: 'Destruction of dentin extending outward from the pulp chamber, presenting as a uniform radiolucent ballooning in the pulp.',
+        severityLevels: ['moderate', 'severe'],
+        recommendations: [
+            'Immediate root canal therapy',
+            'Extraction if perforation has occurred',
+        ],
+        color: '#db2777',
+    },
+    {
+        id: 'retained_root',
+        name: 'Retained Root',
+        description: 'Fragment of a tooth root remaining in the alveolar bone after incomplete extraction or crown fracture.',
+        severityLevels: ['moderate', 'severe'],
+        recommendations: [
+            'Surgical extraction if symptomatic or associated with pathology',
+            'Monitor if deeply embedded and asymptomatic',
+        ],
+        color: '#65a30d',
+    },
+    {
+        id: 'overhanging_restoration',
+        name: 'Overhanging Restoration',
+        description: 'Excess restorative material extending beyond the natural tooth margin, which traps plaque and bone.',
+        severityLevels: ['moderate', 'severe'],
+        recommendations: [
+            'Replacement of the faulty restoration',
+            'Contouring of the overhang to restore proper anatomy',
+        ],
+        color: '#c026d3',
+    },
+    {
+        id: 'secondary_caries',
+        name: 'Secondary Caries (Recurrent)',
+        description: 'Decay developing at the margin or beneath an existing restoration.',
+        severityLevels: ['moderate', 'severe'],
+        recommendations: [
+            'Remove existing restoration, excavate caries, and place new restoration',
+            'Root canal if decay reaches pulp',
+        ],
+        color: '#e11d48',
+    },
+    {
+        id: 'apical_periodontitis',
+        name: 'Apical Periodontitis',
+        description: 'Inflammation of tissues surrounding the apical portion of a tooth, typically resulting from pulpal necrosis.',
+        severityLevels: ['mild', 'moderate', 'severe'],
+        recommendations: [
+            'Root canal treatment',
+            'Extraction of non-salvageable tooth',
+        ],
+        color: '#d97706',
+    },
+    {
+        id: 'pulp_calcification',
+        name: 'Pulp Calcification (Pulp Stones)',
+        description: 'Calcified masses within the pulp chamber or root canal system.',
+        severityLevels: ['mild', 'moderate'],
+        recommendations: [
+            'No treatment required unless root canal therapy is needed',
+            'Monitor for potential canal obliteration',
+        ],
+        color: '#9333ea',
+    },
+    {
+        id: 'radicular_cyst',
+        name: 'Radicular Cyst',
+        description: 'An inflammatory jaw cyst originating from epithelial rests of Malassez at the apex of a non-vital tooth.',
+        severityLevels: ['moderate', 'severe'],
+        recommendations: [
+            'Root canal treatment and careful monitoring',
+            'Surgical enucleation alongside endodontic surgery',
+        ],
+        color: '#4f46e5',
+    },
+    {
+        id: 'odontoma',
+        name: 'Odontoma',
+        description: 'A benign odontogenic tumor composed of enamel, dentin, and cementum, presenting as dense radiopacities.',
+        severityLevels: ['mild', 'moderate', 'severe'],
+        recommendations: [
+            'Surgical removal',
+            'Monitor if small and non-interfering',
+        ],
+        color: '#059669',
+    },
+    {
+        id: 'furcation_involvement',
+        name: 'Furcation Involvement',
+        description: 'Bone loss occurring in the bifurcation or trifurcation of multi-rooted teeth due to periodontal disease.',
+        severityLevels: ['mild', 'moderate', 'severe'],
+        recommendations: [
+            'Scaling, root planing, and optimized oral hygiene',
+            'Periodontal surgery or bone grafting',
+            'Extraction in severe cases',
+        ],
+        color: '#b91c1c',
+    },
+    {
+        id: 'periodontal_abscess',
+        name: 'Periodontal Abscess',
+        description: 'Localized purulent infection within the tissues adjacent to the periodontal pocket.',
+        severityLevels: ['moderate', 'severe'],
+        recommendations: [
+            'Incision and drainage',
+            'Debridement of pocket',
+            'Antibiotic therapy if systemic symptoms are present',
+        ],
+        color: '#be123c',
+    },
+    {
+        id: 'sclerotic_bone',
+        name: 'Sclerotic Bone (Idiopathic Osteosclerosis)',
+        description: 'Localized area of radiodense bone not attributed to inflammation, dysplasia, or neoplasm.',
+        severityLevels: ['mild'],
+        recommendations: [
+            'No treatment necessary',
+            'Routine monitoring to confirm benign nature',
+        ],
+        color: '#047857',
+    },
+    {
+        id: 'crown_defect',
+        name: 'Crown Defect/Fracture',
+        description: 'Loss of coronal tooth structure due to trauma, aggressive wear, or restoration failure.',
+        severityLevels: ['mild', 'moderate', 'severe'],
+        recommendations: [
+            'Composite bonding or veneer',
+            'New artificial crown preparation',
+        ],
+        color: '#1d4ed8',
+    },
+    {
+        id: 'root_canal_treatment',
+        name: 'Endodontically Treated Tooth',
+        description: 'Tooth containing radiopaque obturation material within the root canal system.',
+        severityLevels: ['mild'],
+        recommendations: [
+            'Monitor for apical healing and intact seal',
+            'Assess need for permanent coronal coverage (crown)',
+        ],
+        color: '#64748b',
+    },
+    {
+        id: 'implant_present',
+        name: 'Dental Implant Present',
+        description: 'Titanium fixture integrated into alveolar bone to support a prosthesis.',
+        severityLevels: ['mild'],
+        recommendations: [
+            'Evaluate peri-implant crestal bone levels',
+            'Ensure proper seating of abutment and restoration',
+        ],
+        color: '#475569',
+    },
+    {
+        id: 'missing_tooth',
+        name: 'Missing / Extracted Tooth',
+        description: 'Absence of a tooth in the respective anatomical region.',
+        severityLevels: ['mild', 'moderate'],
+        recommendations: [
+            'Consider replacement via implant, bridge, or partial denture to prevent tilting',
+            'Accept gap if occlusal stability is maintained',
+        ],
+        color: '#94a3b8',
     },
 ];
 

@@ -99,6 +99,13 @@ export default function DiagnosisPage() {
         return { sx: rect.width / imgSize.w, sy: rect.height / imgSize.h };
     };
 
+    const groupedFindings = findings.reduce((acc, finding, idx) => {
+        const zone = finding.toothZone || 'Unspecified Region';
+        if (!acc[zone]) acc[zone] = [];
+        acc[zone].push({ ...finding, originalIndex: idx });
+        return acc;
+    }, {});
+
     return (
         <div className={styles.page}>
             <AnimatePresence>{loading && <LoadingOverlay message="Scanning for conditions…" />}</AnimatePresence>
@@ -279,31 +286,44 @@ export default function DiagnosisPage() {
                             </motion.div>
                         )}
 
-                        {/* Summary cards */}
+                        {/* Per-Tooth Health Reports */}
                         {findings.length > 0 && (
                             <motion.div
-                                className={styles.summaryGrid}
+                                className={styles.perToothGrid}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 }}
                             >
-                                {findings.map((f, idx) => (
-                                    <motion.div
-                                        key={idx}
-                                        className={styles.summaryCard}
-                                        onMouseEnter={() => setHoveredIdx(idx)}
-                                        onMouseLeave={() => setHoveredIdx(null)}
-                                        whileHover={{ y: -4 }}
-                                    >
-                                        <div className={styles.summaryHeader}>
-                                            <span className={styles.summaryDot} style={{ background: f.color }} />
-                                            <span className={styles.summaryName}>{f.name}</span>
+                                {Object.entries(groupedFindings).map(([zone, zoneFindings], zoneIdx) => (
+                                    <div key={zoneIdx} className={styles.toothReportCard}>
+                                        <div className={styles.toothReportHeader}>
+                                            <h3 className={styles.toothZoneTitle}>🦷 {zone}</h3>
+                                            <span className={styles.toothConditionCount}>
+                                                {zoneFindings.length} Finding{zoneFindings.length > 1 ? 's' : ''}
+                                            </span>
                                         </div>
-                                        <span className={styles.summarySev} style={{ color: f.color, borderColor: f.color }}>
-                                            {f.severity}
-                                        </span>
-                                        <p className={styles.summaryRec}>💡 {f.recommendation}</p>
-                                    </motion.div>
+                                        <div className={styles.toothReportBody}>
+                                            {zoneFindings.map((f) => (
+                                                <motion.div
+                                                    key={f.originalIndex}
+                                                    className={styles.toothFindingItem}
+                                                    onMouseEnter={() => setHoveredIdx(f.originalIndex)}
+                                                    onMouseLeave={() => setHoveredIdx(null)}
+                                                >
+                                                    <div className={styles.findingTop}>
+                                                        <div className={styles.findingNameWrapper}>
+                                                            <span className={styles.findingDot} style={{ background: f.color }} />
+                                                            <span className={styles.findingName}>{f.name}</span>
+                                                        </div>
+                                                        <span className={styles.findingSeverity} style={{ color: f.color, borderColor: `${f.color}40`, backgroundColor: `${f.color}15` }}>
+                                                            {f.severity}
+                                                        </span>
+                                                    </div>
+                                                    <p className={styles.findingRec}>⚡ {f.recommendation}</p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 ))}
                             </motion.div>
                         )}

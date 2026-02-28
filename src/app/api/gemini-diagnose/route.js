@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 const DENTAL_PROMPT = `You are an expert dental radiograph analyst. Analyze this dental X-ray image and identify all visible dental conditions.
 
 For each condition found, provide:
-- name: condition name (e.g. "Dental Caries", "Periapical Lesion", "Impacted Tooth", "Alveolar Bone Loss", "Calculus", "Root Fracture", "Root Resorption", etc.)
+- name: condition name. Must be one of: "Dental Caries", "Periapical Lesion", "Impacted Tooth", "Alveolar Bone Loss", "Root Fracture", "Calculus", "Dentigerous Cyst", "Root Resorption", "Supernumerary Tooth", "Widened PDL Space", "Hypercementosis", "Internal Resorption", "Retained Root", "Overhanging Restoration", "Secondary Caries", "Apical Periodontitis", "Pulp Calcification", "Radicular Cyst", "Odontoma", "Furcation Involvement", "Periodontal Abscess", "Sclerotic Bone", "Crown Defect", "Endodontically Treated Tooth", "Dental Implant", "Missing Tooth".
 - severity: "mild", "moderate", or "severe"
 - confidence: a number between 0.70 and 0.99
 - description: brief clinical description of what you see
@@ -39,21 +39,34 @@ Respond ONLY with valid JSON in this exact format:
 const CONDITION_COLORS = {
     'dental caries': '#ef4444',
     'cavity': '#ef4444',
+    'secondary caries': '#e11d48',
     'periapical': '#f97316',
+    'apical periodontitis': '#d97706',
+    'abscess': '#be123c',
     'impacted': '#8b5cf6',
     'bone loss': '#f59e0b',
     'alveolar': '#f59e0b',
+    'furcation': '#b91c1c',
     'fracture': '#ef4444',
     'calculus': '#a855f7',
     'tartar': '#a855f7',
-    'cyst': '#a855f7',
+    'cyst': '#4f46e5',
     'resorption': '#06b6d4',
+    'internal resorption': '#db2777',
     'supernumerary': '#22c55e',
     'widened': '#64748b',
-    'restoration': '#06b6d4',
+    'hypercementosis': '#0ea5e9',
+    'retained root': '#65a30d',
+    'restoration': '#c026d3', // overhang
     'missing': '#94a3b8',
-    'crown': '#3b82f6',
+    'crown': '#1d4ed8', // defect
     'filling': '#3b82f6',
+    'pulp calcification': '#9333ea',
+    'odontoma': '#059669',
+    'sclerotic': '#047857',
+    'endodontic': '#64748b',
+    'root canal': '#64748b',
+    'implant': '#475569'
 };
 
 function getConditionColor(name) {

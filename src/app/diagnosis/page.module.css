@@ -197,8 +197,118 @@
     white-space: nowrap;
 }
 
+/* Per-Tooth Reports */
+.perToothGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.toothReportCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.toothReportHeader {
+    background: rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toothZoneTitle {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.toothConditionCount {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--bg-base);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.toothReportBody {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.toothFindingItem {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border);
+    transition: all var(--transition-short);
+}
+
+.toothFindingItem:hover {
+    transform: translateX(4px);
+}
+
+.toothFindingItem:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.findingTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.findingNameWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.findingDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.findingName {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.findingSeverity {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+    text-transform: capitalize;
+}
+
+.findingRec {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    padding-left: 16px;
+}
+
 @media (max-width: 768px) {
-    .summaryGrid {
+
+    .summaryGrid,
+    .perToothGrid {
         grid-template-columns: 1fr;
     }
 }
