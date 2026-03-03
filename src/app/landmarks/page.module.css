@@ -207,3 +207,38 @@
         max-height: none;
     }
 }
+
+/* Error Alert */
+.errorAlert {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    color: #ef4444;
+}
+
+.errorIcon {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.errorContent {
+    flex: 1;
+}
+
+.errorTitle {
+    display: block;
+    font-weight: 700;
+    font-size: 0.938rem;
+    margin-bottom: 4px;
+}
+
+.errorText {
+    font-size: 0.813rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}

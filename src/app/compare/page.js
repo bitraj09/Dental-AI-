@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiColumns, FiZap, FiRefreshCw } from 'react-icons/fi';
+import { FiColumns, FiZap, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
 import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -13,16 +13,20 @@ export default function ComparePage() {
     const [imageB, setImageB] = useState(null);
     const [resultsA, setResultsA] = useState(null);
     const [resultsB, setResultsB] = useState(null);
+    const [isValidXrayA, setIsValidXrayA] = useState(true);
+    const [isValidXrayB, setIsValidXrayB] = useState(true);
     const [loading, setLoading] = useState(false);
     const [imgSizeA, setImgSizeA] = useState({ w: 800, h: 400 });
     const [imgSizeB, setImgSizeB] = useState({ w: 800, h: 400 });
 
     const handleImageA = useCallback((dataUrl) => {
         setImageA(dataUrl); setResultsA(null);
+        setIsValidXrayA(true);
     }, []);
 
     const handleImageB = useCallback((dataUrl) => {
         setImageB(dataUrl); setResultsB(null);
+        setIsValidXrayB(true);
     }, []);
 
     const handleCompare = async () => {
@@ -39,14 +43,22 @@ export default function ComparePage() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.findings && !data.error) return data.findings;
+
+                    // If Gemini explicitly says it's not a valid OPG, don't fall back to mock
+                    if (data.isValidXray === false) {
+                        return { results: [], isValid: false };
+                    }
+
+                    if (data.findings && !data.error) {
+                        return { results: data.findings, isValid: true };
+                    }
                 }
             } catch (err) {
                 console.warn('[Gemini Compare] Falling back:', err);
             }
             // Fallback
             const seed = getImageSeed(img);
-            return diagnoseConditions(imgSize.w, imgSize.h, seed);
+            return { results: diagnoseConditions(imgSize.w, imgSize.h, seed), isValid: true };
         };
 
         const [resA, resB] = await Promise.all([
@@ -54,8 +66,10 @@ export default function ComparePage() {
             analyzeImage(imageB, imgSizeB),
         ]);
 
-        setResultsA(resA);
-        setResultsB(resB);
+        setResultsA(resA.results);
+        setIsValidXrayA(resA.isValid);
+        setResultsB(resB.results);
+        setIsValidXrayB(resB.isValid);
         setLoading(false);
     };
 
@@ -92,9 +106,9 @@ export default function ComparePage() {
 
             <div className="container">
                 <motion.div className={styles.header} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-                    <h1 className="section-title">Image Comparison</h1>
+                    <h1 className="section-title">OPG Image Comparison</h1>
                     <p className="section-subtitle">
-                        Upload two radiographs side-by-side to compare findings — ideal for before/after treatment analysis.
+                        Upload two panoramic OPG radiographs side-by-side to compare findings — ideal for before/after treatment analysis.
                     </p>
                 </motion.div>
 
@@ -104,16 +118,29 @@ export default function ComparePage() {
                         <h3 className={styles.panelTitle}>Image A (Before)</h3>
                         {!imageA ? (
                             <>
-                                <ImageUploader onImageSelect={handleImageA} label="Upload first radiograph" />
+                                <ImageUploader onImageSelect={handleImageA} label="Upload first OPG radiograph" />
                                 <SampleImages onSelect={handleImageA} />
                             </>
                         ) : (
                             <div className={styles.preview}>
                                 <img src={imageA} alt="Radiograph A" onLoad={onLoadA} />
-                                {resultsA && (
+                                {resultsA && isValidXrayA && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                         <h4 className={styles.resultsTitle}>Findings ({resultsA.length})</h4>
                                         {renderFindings(resultsA)}
+                                    </motion.div>
+                                )}
+                                {!isValidXrayA && (
+                                    <motion.div
+                                        className={styles.errorAlert}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                    >
+                                        <FiAlertTriangle className={styles.errorIcon} size={20} />
+                                        <div className={styles.errorContent}>
+                                            <span className={styles.errorTitle}>Unsupported Image</span>
+                                            <p className={styles.errorText}>This image is not a valid OPG radiograph.</p>
+                                        </div>
                                     </motion.div>
                                 )}
                             </div>
@@ -125,16 +152,29 @@ export default function ComparePage() {
                         <h3 className={styles.panelTitle}>Image B (After)</h3>
                         {!imageB ? (
                             <>
-                                <ImageUploader onImageSelect={handleImageB} label="Upload second radiograph" />
+                                <ImageUploader onImageSelect={handleImageB} label="Upload second OPG radiograph" />
                                 <SampleImages onSelect={handleImageB} />
                             </>
                         ) : (
                             <div className={styles.preview}>
                                 <img src={imageB} alt="Radiograph B" onLoad={onLoadB} />
-                                {resultsB && (
+                                {resultsB && isValidXrayB && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                         <h4 className={styles.resultsTitle}>Findings ({resultsB.length})</h4>
                                         {renderFindings(resultsB)}
+                                    </motion.div>
+                                )}
+                                {!isValidXrayB && (
+                                    <motion.div
+                                        className={styles.errorAlert}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                    >
+                                        <FiAlertTriangle className={styles.errorIcon} size={20} />
+                                        <div className={styles.errorContent}>
+                                            <span className={styles.errorTitle}>Unsupported Image</span>
+                                            <p className={styles.errorText}>This image is not a valid OPG radiograph.</p>
+                                        </div>
                                     </motion.div>
                                 )}
                             </div>
@@ -157,7 +197,7 @@ export default function ComparePage() {
                 </motion.div>
 
                 {/* Summary */}
-                {resultsA && resultsB && (
+                {resultsA && resultsB && isValidXrayA && isValidXrayB && (
                     <motion.div className={styles.summary} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <h3 className={styles.summaryTitle}><FiColumns size={18} /> Comparison Summary</h3>
                         <div className={styles.summaryGrid}>

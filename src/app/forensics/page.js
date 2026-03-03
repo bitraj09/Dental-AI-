@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiActivity, FiUser, FiBarChart2, FiFileText, FiClock } from 'react-icons/fi';
+import { FiZap, FiTarget, FiActivity, FiArrowRight, FiDownload, FiClock, FiAlertTriangle, FiSave, FiUser, FiFileText, FiBarChart2 } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
 import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -11,19 +11,25 @@ import styles from './page.module.css';
 
 export default function ForensicsPage() {
     const [image, setImage] = useState(null);
-    const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
-    const [showReport, setShowReport] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [summary, setSummary] = useState('');
     const [history, setHistory] = useState([]);
     const [aiSource, setAiSource] = useState(null);
-    const [summary, setSummary] = useState('');
+    const [isValidXray, setIsValidXray] = useState(true);
+    const [patientName, setPatientName] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [showReport, setShowReport] = useState(false);
 
     const handleImage = useCallback((dataUrl) => {
         setImage(dataUrl);
         setResult(null);
-        setShowReport(false);
         setAiSource(null);
         setSummary('');
+        setIsValidXray(true);
+        setSaved(false);
+        setPatientName('');
     }, []);
 
     const handleAnalyze = async () => {
@@ -42,10 +48,22 @@ export default function ForensicsPage() {
             });
             if (res.ok) {
                 const data = await res.json();
+
+                // If it's not a valid OPG, don't fall back to mock
+                if (data.isValidXray === false) {
+                    setAiSource('gemini');
+                    setResult(null);
+                    setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                    setIsValidXray(false);
+                    setLoading(false);
+                    return;
+                }
+
                 if (data.result && !data.error) {
                     estimation = data.result;
                     source = 'gemini';
                     setSummary(data.summary || '');
+                    setIsValidXray(true);
                 }
             }
         } catch (err) {
@@ -74,6 +92,43 @@ export default function ForensicsPage() {
             },
             ...prev.slice(0, 9),
         ]);
+        setSaved(false);
+    };
+
+    const handleSave = async () => {
+        if (!result) return;
+        setSaving(true);
+        try {
+            const findings = result.parameters.map(p => ({
+                name: p.name,
+                description: p.finding,
+                severity: 'info',
+            }));
+            const res = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'Forensics',
+                    patientName: patientName || 'Untitled Case',
+                    findings,
+                    summary: summary || `Age estimation: ${result.estimatedAge} years (range: ${result.minAge}–${result.maxAge}).`,
+                    imageThumbnail: image,
+                }),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setSaved(true);
+            } else {
+                console.error('Save failed:', res.status, data);
+                alert(`Failed to save: ${data.error || 'Unknown error'}. Please make sure you are logged in.`);
+            }
+        } catch (err) {
+            console.error('Failed to save record:', err);
+            alert('Failed to save record. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const agePercent = result ? Math.min(100, (result.estimatedAge / 80) * 100) : 0;
@@ -88,9 +143,9 @@ export default function ForensicsPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <h1 className="section-title">Forensic Odontology</h1>
+                    <h1 className="section-title">OPG Forensic Odontology</h1>
                     <p className="section-subtitle">
-                        Estimate age from dental radiographs using eruption patterns, root closure, pulp narrowing, and cementum deposition.
+                        Estimate age from panoramic OPG radiographs using eruption patterns, root closure, pulp narrowing, and cementum deposition.
                     </p>
                 </motion.div>
 
@@ -101,7 +156,7 @@ export default function ForensicsPage() {
                         transition={{ delay: 0.2 }}
                         style={{ maxWidth: 640, margin: '0 auto' }}
                     >
-                        <ImageUploader onImageSelect={handleImage} label="Upload Radiograph for Age Estimation" />
+                        <ImageUploader onImageSelect={handleImage} label="Upload Panoramic OPG for Age Estimation" />
                         <SampleImages onSelect={handleImage} />
 
                         {/* History */}
@@ -170,20 +225,37 @@ export default function ForensicsPage() {
                             </div>
                         )}
 
-                        {/* Gemini Summary */}
-                        {summary && aiSource === 'gemini' && (
+                        {/* Gemini AI Summary */}
+                        {summary && aiSource === 'gemini' && isValidXray && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 style={{
-                                    marginBottom: 16, padding: '12px 16px',
+                                    marginTop: 16, padding: '12px 16px',
                                     background: 'rgba(99,102,241,0.08)',
                                     border: '1px solid rgba(99,102,241,0.2)',
                                     borderRadius: 10, fontSize: '0.85rem',
                                     color: 'var(--text-secondary)', lineHeight: 1.5,
+                                    maxWidth: 640, margin: '16px auto 0'
                                 }}
                             >
-                                <strong style={{ color: '#818cf8' }}>🤖 Gemini Assessment:</strong> {summary}
+                                <strong style={{ color: '#818cf8' }}>🤖 Gemini Analysis:</strong> {summary}
+                            </motion.div>
+                        )}
+
+                        {/* Error Alert for Invalid X-ray */}
+                        {summary && aiSource === 'gemini' && !isValidXray && (
+                            <motion.div
+                                className={styles.errorAlert}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                style={{ maxWidth: 640, margin: '24px auto 0' }}
+                            >
+                                <FiAlertTriangle className={styles.errorIcon} size={20} />
+                                <div className={styles.errorContent}>
+                                    <span className={styles.errorTitle}>Unsupported Image Detected</span>
+                                    <p className={styles.errorText}>{summary}</p>
+                                </div>
                             </motion.div>
                         )}
 
@@ -298,11 +370,34 @@ export default function ForensicsPage() {
                             </div>
                         </motion.div>
 
+                        {/* Save to History */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{ marginBottom: 20, padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <input
+                                type="text"
+                                placeholder="Patient Name"
+                                value={patientName}
+                                onChange={(e) => setPatientName(e.target.value)}
+                                style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', minWidth: 200 }}
+                            />
+                            <button
+                                className={`btn ${saved ? 'btn-success' : 'btn-primary'}`}
+                                onClick={handleSave}
+                                disabled={saving || saved}
+                                style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                            >
+                                <FiSave size={16} /> {saving ? 'Saving...' : saved ? 'Saved to History' : 'Save Analysis'}
+                            </button>
+                        </motion.div>
+
                         <div className={styles.resultActions}>
-                            <button className="btn btn-primary" onClick={() => { setImage(null); setResult(null); setShowReport(false); }}>
+                            <button className="btn btn-primary" onClick={() => { setImage(null); setResult(null); setShowReport(false); setSaved(false); setPatientName(''); }}>
                                 New Analysis
                             </button>
-                            <button className="btn btn-outline" onClick={() => { setResult(null); setShowReport(false); }}>
+                            <button className="btn btn-outline" onClick={() => { setResult(null); setShowReport(false); setSaved(false); }}>
                                 Re-Analyze
                             </button>
                             <button

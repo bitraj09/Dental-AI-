@@ -1,27 +1,24 @@
 # ──────────────────────────────────────────────
-# Stage 1 – Install dependencies
+# Stage 1 – Builder
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS deps
+FROM node:20-slim AS builder
 
-# Native build tools needed by bcrypt
-RUN apk add --no-cache python3 make g++ libc6-compat
+# Install build dependencies & OpenSSL for Prisma
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    openssl \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Install dependencies in the same stage to avoid COPY --from issues
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# ──────────────────────────────────────────────
-# Stage 2 – Build the application
-# ──────────────────────────────────────────────
-FROM node:20-alpine AS builder
-
-RUN apk add --no-cache libc6-compat
-
-WORKDIR /app
-
-# Copy deps from previous stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the code
 COPY . .
 
 # Generate Prisma client
@@ -32,11 +29,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ──────────────────────────────────────────────
-# Stage 3 – Production runner
+# Stage 2 – Production runner
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
-RUN apk add --no-cache libc6-compat openssl
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -44,10 +41,10 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create a non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser  --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 nextjs
 
-# Copy built assets from builder
+# Copy built assets
 COPY --from=builder /app/public              ./public
 COPY --from=builder /app/.next/standalone    ./
 COPY --from=builder /app/.next/static        ./.next/static
@@ -61,7 +58,6 @@ RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 

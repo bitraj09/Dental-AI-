@@ -28,6 +28,8 @@ export default function DiagnosisPage() {
     const [history, setHistory] = useState([]);
     const [aiSource, setAiSource] = useState(null); // 'gemini' | 'mock'
     const [summary, setSummary] = useState('');
+    const [isValidXray, setIsValidXray] = useState(true);
+    const [patientName, setPatientName] = useState('');
     const imgRef = useRef(null);
 
     const handleImage = useCallback((dataUrl) => {
@@ -36,6 +38,7 @@ export default function DiagnosisPage() {
         setShowReport(false);
         setAiSource(null);
         setSummary('');
+        setIsValidXray(true);
     }, []);
 
     // Try Gemini API first, fall back to mock AI
@@ -60,8 +63,20 @@ export default function DiagnosisPage() {
 
             if (res.ok) {
                 const data = await res.json();
+
+                // If Gemini explicitly says it's not a valid OPG, don't fall back to mock
+                if (data.isValidXray === false) {
+                    setAiSource('gemini');
+                    setFindings([]);
+                    setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                    setIsValidXray(false);
+                    setLoading(false);
+                    return; // Stop here
+                }
+
                 if (data.findings && data.findings.length >= 0 && !data.error) {
                     results = data.findings;
+                    setIsValidXray(data.isValidXray !== false);
                     source = 'gemini';
                     setSummary(data.summary || '');
                 }
@@ -87,6 +102,38 @@ export default function DiagnosisPage() {
             { date: new Date(), count: results.length, findings: results, source },
             ...prev.slice(0, 9),
         ]);
+        setSaved(false);
+    };
+
+    const handleSave = async () => {
+        if (!findings || findings.length === 0) return;
+        setSaving(true);
+        try {
+            const res = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'Diagnosis',
+                    patientName: patientName || 'Untitled Case',
+                    findings: findings,
+                    summary: summary || `Analysis found ${findings.length} dental condition(s).`,
+                    imageThumbnail: image,
+                }),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setSaved(true);
+            } else {
+                console.error('Save failed:', res.status, data);
+                alert(`Failed to save: ${data.error || 'Unknown error'}. Please make sure you are logged in.`);
+            }
+        } catch (err) {
+            console.error('Failed to save record:', err);
+            alert('Failed to save record. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const onImgLoad = (e) => {
@@ -129,9 +176,9 @@ export default function DiagnosisPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <h1 className="section-title">Patient Diagnosis</h1>
+                    <h1 className="section-title">OPG Diagnosis Analysis</h1>
                     <p className="section-subtitle">
-                        Upload a dental radiograph to detect cavities, impacted teeth, bone loss, and other conditions.
+                        Upload a panoramic OPG radiograph to detect cavities, impacted teeth, bone loss, and other conditions.
                     </p>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 12 }}>
                         <span style={{
@@ -150,7 +197,7 @@ export default function DiagnosisPage() {
                         transition={{ delay: 0.2 }}
                         style={{ maxWidth: 640, margin: '0 auto' }}
                     >
-                        <ImageUploader onImageSelect={handleImage} label="Upload Radiograph for Diagnosis" />
+                        <ImageUploader onImageSelect={handleImage} label="Upload Panoramic OPG for Diagnosis" />
                         <SampleImages onSelect={handleImage} />
 
                         {/* History */}
@@ -216,10 +263,35 @@ export default function DiagnosisPage() {
                                     </button>
                                 </>
                             )}
-                            <button className="btn btn-ghost" onClick={() => { setImage(null); setFindings([]); setShowReport(false); }}>
+                            <button className="btn btn-ghost" onClick={() => { setImage(null); setFindings([]); setShowReport(false); setPatientName(''); setSaved(false); }}>
                                 New Image
                             </button>
                         </div>
+
+                        {findings.length > 0 && isValidXray && (
+                            <motion.div
+                                className={styles.saveAction}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                <div className={styles.inputGroup}>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter Patient Name (Optional)"
+                                        value={patientName}
+                                        onChange={(e) => setPatientName(e.target.value)}
+                                        className={styles.patientInput}
+                                    />
+                                </div>
+                                <button
+                                    className={`btn ${saved ? 'btn-success' : 'btn-primary'}`}
+                                    onClick={handleSave}
+                                    disabled={saving || saved}
+                                >
+                                    <FiSave size={16} /> {saving ? 'Saving...' : saved ? 'Saved to History' : 'Save Analysis'}
+                                </button>
+                            </motion.div>
+                        )}
 
                         <div className={styles.imageContainer}>
                             <img ref={imgRef} src={image} alt="Radiograph" className={styles.radiograph} onLoad={onImgLoad} />
@@ -270,7 +342,7 @@ export default function DiagnosisPage() {
                         </div>
 
                         {/* Gemini AI Summary */}
-                        {summary && aiSource === 'gemini' && (
+                        {summary && aiSource === 'gemini' && isValidXray && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -283,6 +355,21 @@ export default function DiagnosisPage() {
                                 }}
                             >
                                 <strong style={{ color: '#818cf8' }}>🤖 Gemini Analysis:</strong> {summary}
+                            </motion.div>
+                        )}
+
+                        {/* Error Alert for Invalid X-ray */}
+                        {summary && aiSource === 'gemini' && !isValidXray && (
+                            <motion.div
+                                className={styles.errorAlert}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                            >
+                                <FiAlertTriangle className={styles.errorIcon} size={20} />
+                                <div className={styles.errorContent}>
+                                    <span className={styles.errorTitle}>Unsupported Image Detected</span>
+                                    <p className={styles.errorText}>{summary}</p>
+                                </div>
                             </motion.div>
                         )}
 

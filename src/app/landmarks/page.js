@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiZap, FiList, FiEye } from 'react-icons/fi';
+import { FiZap, FiList, FiEye, FiAlertTriangle, FiSave } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
 import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -17,6 +17,11 @@ export default function LandmarksPage() {
     const [selectedLm, setSelectedLm] = useState(null);
     const [showLabels, setShowLabels] = useState(true);
     const [aiSource, setAiSource] = useState(null);
+    const [summary, setSummary] = useState('');
+    const [isValidXray, setIsValidXray] = useState(true);
+    const [patientName, setPatientName] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
     const imgRef = useRef(null);
 
     const handleImage = useCallback((dataUrl) => {
@@ -24,7 +29,42 @@ export default function LandmarksPage() {
         setResults([]);
         setSelectedLm(null);
         setAiSource(null);
+        setSummary('');
+        setIsValidXray(true);
+        setSaved(false);
+        setPatientName('');
     }, []);
+
+    const handleSave = async () => {
+        if (!results || results.length === 0) return;
+        setSaving(true);
+        try {
+            const res = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'Landmarks',
+                    patientName: patientName || 'Untitled Case',
+                    findings: results.map(r => ({ name: r.name, description: r.description })),
+                    summary: summary || `Reference landmarks detected on OPG radiograph.`,
+                    imageThumbnail: image,
+                }),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setSaved(true);
+            } else {
+                console.error('Save failed:', res.status, data);
+                alert(`Failed to save: ${data.error || 'Unknown error'}. Please make sure you are logged in.`);
+            }
+        } catch (err) {
+            console.error('Failed to save record:', err);
+            alert('Failed to save record. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const handleAnalyze = async () => {
         if (!image) return;
@@ -42,9 +82,22 @@ export default function LandmarksPage() {
             });
             if (res.ok) {
                 const data = await res.json();
+
+                // If it's not a valid OPG, don't fall back to mock
+                if (data.isValidXray === false) {
+                    setAiSource('gemini');
+                    setResults([]);
+                    setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                    setIsValidXray(false);
+                    setLoading(false);
+                    return;
+                }
+
                 if (data.landmarks && data.landmarks.length > 0 && !data.error) {
                     detected = data.landmarks;
                     source = 'gemini';
+                    setSummary(data.summary || '');
+                    setIsValidXray(true);
                 }
             }
         } catch (err) {
@@ -62,6 +115,7 @@ export default function LandmarksPage() {
         setAiSource(source);
         setResults(detected);
         setLoading(false);
+        setSaved(false);
     };
 
     const onImgLoad = (e) => {
@@ -85,9 +139,9 @@ export default function LandmarksPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <h1 className="section-title">Landmark Detection</h1>
+                    <h1 className="section-title">OPG Landmark Detection</h1>
                     <p className="section-subtitle">
-                        Upload a dental radiograph and let AI identify anatomical landmarks with precision.
+                        Upload a panoramic OPG radiograph and let AI identify anatomical landmarks with precision.
                     </p>
                 </motion.div>
 
@@ -98,7 +152,7 @@ export default function LandmarksPage() {
                         transition={{ delay: 0.2 }}
                         style={{ maxWidth: 640, margin: '0 auto' }}
                     >
-                        <ImageUploader onImageSelect={handleImage} label="Upload OPG Radiograph" />
+                        <ImageUploader onImageSelect={handleImage} label="Upload Panoramic OPG for Landmarks" />
                         <SampleImages onSelect={handleImage} />
                     </motion.div>
                 ) : (
@@ -107,7 +161,7 @@ export default function LandmarksPage() {
                         <div className={styles.canvasWrap}>
                             <div className={styles.toolbar}>
                                 <button className="btn btn-primary" onClick={handleAnalyze} disabled={loading || results.length > 0}>
-                                    <FiZap size={18} /> {results.length > 0 ? 'Analysis Complete' : 'Detect Landmarks'}
+                                    <FiZap size={18} /> {results.length > 0 ? 'Analysis Complete' : 'Run Detection'}
                                 </button>
                                 {aiSource && (
                                     <span style={{
@@ -126,10 +180,35 @@ export default function LandmarksPage() {
                                         <FiEye size={16} /> {showLabels ? 'Hide' : 'Show'} Labels
                                     </button>
                                 )}
-                                <button className="btn btn-outline" onClick={() => { setImage(null); setResults([]); setSelectedLm(null); }}>
+                                <button className="btn btn-ghost" onClick={() => { setImage(null); setResults([]); setPatientName(''); setSaved(false); }}>
                                     New Image
                                 </button>
                             </div>
+
+                            {results.length > 0 && isValidXray && (
+                                <motion.div
+                                    className={styles.saveAction}
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    style={{ marginBottom: 20, padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    <input
+                                        type="text"
+                                        placeholder="Patient Name"
+                                        value={patientName}
+                                        onChange={(e) => setPatientName(e.target.value)}
+                                        style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)', minWidth: 200 }}
+                                    />
+                                    <button
+                                        className={`btn ${saved ? 'btn-success' : 'btn-primary'}`}
+                                        onClick={handleSave}
+                                        disabled={saving || saved}
+                                        style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                                    >
+                                        <FiSave size={16} /> {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
+                                    </button>
+                                </motion.div>
+                            )}
 
                             <div className={styles.imageContainer}>
                                 <img
@@ -170,7 +249,7 @@ export default function LandmarksPage() {
                         </div>
 
                         {/* Sidebar */}
-                        {results.length > 0 && (
+                        {(results.length > 0 || (summary && aiSource === 'gemini' && !isValidXray)) && (
                             <motion.aside
                                 className={styles.sidebar}
                                 initial={{ opacity: 0, x: 40 }}
@@ -191,37 +270,54 @@ export default function LandmarksPage() {
                                     ))}
                                 </div>
 
-                                <div className={styles.resultList}>
-                                    {results.map((lm, idx) => (
-                                        <motion.div
-                                            key={lm.id}
-                                            className={`${styles.resultItem} ${selectedLm === lm.id ? styles.resultActive : ''}`}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            onClick={() => setSelectedLm(selectedLm === lm.id ? null : lm.id)}
-                                        >
-                                            <div className={styles.resultHeader}>
-                                                <span className={styles.resultDot} style={{ background: lm.color }} />
-                                                <span className={styles.resultName}>{lm.name}</span>
-                                                <span className={styles.resultConf}>{Math.round(lm.confidence * 100)}%</span>
+                                {/* Error Alert for Invalid X-ray */}
+                                {summary && aiSource === 'gemini' && !isValidXray && (
+                                    <motion.div
+                                        className={styles.errorAlert}
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        style={{ marginBottom: 20 }}
+                                    >
+                                        <FiAlertTriangle className={styles.errorIcon} size={20} />
+                                        <div className={styles.errorContent}>
+                                            <span className={styles.errorTitle}>Unsupported Image</span>
+                                            <p className={styles.errorText}>{summary}</p>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {results.length > 0 ? (
+                                    <div className={styles.resultList}>
+                                        {results.map((lm) => (
+                                            <div
+                                                key={lm.id}
+                                                className={`${styles.resultItem} ${selectedLm === lm.id ? styles.resultActive : ''}`}
+                                                onClick={() => setSelectedLm(lm.id)}
+                                            >
+                                                <div className={styles.resultHeader}>
+                                                    <span className={styles.resultDot} style={{ background: lm.color }} />
+                                                    <span className={styles.resultName}>{lm.name}</span>
+                                                    <span className={styles.resultConf}>{Math.round(lm.confidence * 100)}%</span>
+                                                </div>
+                                                <AnimatePresence>
+                                                    {selectedLm === lm.id && (
+                                                        <motion.div
+                                                            className={styles.resultDetail}
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                        >
+                                                            <p>{lm.description}</p>
+                                                            <p className={styles.significance}>{lm.significance}</p>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
-                                            <AnimatePresence>
-                                                {selectedLm === lm.id && (
-                                                    <motion.div
-                                                        className={styles.resultDetail}
-                                                        initial={{ height: 0, opacity: 0 }}
-                                                        animate={{ height: 'auto', opacity: 1 }}
-                                                        exit={{ height: 0, opacity: 0 }}
-                                                    >
-                                                        <p>{lm.description}</p>
-                                                        <p className={styles.significance}>📋 {lm.significance}</p>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </motion.div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    !loading && isValidXray && <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Click analyze to detect landmarks.</p>
+                                )}
                             </motion.aside>
                         )}
                     </div>

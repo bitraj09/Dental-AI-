@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -26,7 +27,7 @@ model Record {
   type           String
   patientName    String
   findings       Json
-  summary        String
+  summary        String   @db.Text
   imageThumbnail String?  @db.LongText
   createdAt      DateTime @default(now())
   user           User     @relation(fields: [userId], references: [id])

@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const LANDMARK_PROMPT = `You are an expert cephalometric and dental radiograph analyst. Analyze this dental X-ray image and identify all visible anatomical landmarks used in cephalometric analysis and dental diagnostics.
+const LANDMARK_PROMPT = `You are an expert cephalometric and dental radiograph analyst. Analyze this OPG (Orthopantomogram) panoramic X-ray image and identify anatomical landmarks.
+
+IMPORTANT: This system ONLY accepts OPG (panoramic) radiographs. If the image is not a panoramic OPG dental X-ray, you MUST respond with isValidXray: false.
 
 For each landmark found, provide:
 - id: a short snake_case identifier (e.g. "sella", "nasion", "gonion", "menton", "porion")
@@ -21,7 +23,7 @@ Common landmarks to look for:
 
 IMPORTANT RULES:
 1. Only report landmarks you can reasonably identify in the image
-2. If the image is not a dental/cephalometric X-ray, return empty landmarks array
+2. If the image is NOT an OPG dental X-ray, return empty landmarks array, set isValidXray to false, and provide explanation in summary.
 3. Provide accurate positional estimates based on anatomy
 
 Respond ONLY with valid JSON:

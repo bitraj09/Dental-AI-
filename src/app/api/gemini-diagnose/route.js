@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const DENTAL_PROMPT = `You are an expert dental radiograph analyst. Analyze this dental X-ray image and identify all visible dental conditions.
+const DENTAL_PROMPT = `You are an expert dental radiograph analyst. Analyze this OPG (Orthopantomogram) panoramic X-ray image and identify all visible dental conditions.
+
+IMPORTANT: This system ONLY accepts OPG (panoramic) radiographs. If the image is not a panoramic OPG dental X-ray, you MUST respond with isValidXray: false.
 
 For each condition found, provide:
 - name: condition name. Must be one of: "Dental Caries", "Periapical Lesion", "Impacted Tooth", "Alveolar Bone Loss", "Root Fracture", "Calculus", "Dentigerous Cyst", "Root Resorption", "Supernumerary Tooth", "Widened PDL Space", "Hypercementosis", "Internal Resorption", "Retained Root", "Overhanging Restoration", "Secondary Caries", "Apical Periodontitis", "Pulp Calcification", "Radicular Cyst", "Odontoma", "Furcation Involvement", "Periodontal Abscess", "Sclerotic Bone", "Crown Defect", "Endodontically Treated Tooth", "Dental Implant", "Missing Tooth".
@@ -14,7 +16,7 @@ For each condition found, provide:
 
 IMPORTANT RULES:
 1. Only report conditions you can actually identify in the image
-2. If the image is not a dental X-ray, respond with an empty findings array and set isValidXray to false
+2. If the image is NOT an OPG dental X-ray (e.g., it is a regular photo, a different type of X-ray, or unrelated content), respond with an empty findings array, set isValidXray to false, and explain WHY in the summary field.
 3. Be conservative — do not hallucinate conditions
 4. Report 0-8 findings depending on what's visible
 

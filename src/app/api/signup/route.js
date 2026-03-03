@@ -10,6 +10,7 @@ export async function POST(req) {
         const name = formData.get('name');
         const email = formData.get('email');
         const password = formData.get('password');
+        const confirmPassword = formData.get('confirmPassword');
         const collegeName = formData.get('collegeName');
         const collegeYear = formData.get('collegeYear');
         const collegeIdNumber = formData.get('collegeIdNumber');
@@ -19,7 +20,26 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Check if user exists
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+        }
+
+        // Password strength validation
+        if (password.length < 8) {
+            return NextResponse.json({ error: 'Password must be at least 8 characters long' }, { status: 400 });
+        }
+
+        if (password !== confirmPassword) {
+            return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
+        }
+
+        if (!idCard || idCard.size === 0) {
+            return NextResponse.json({ error: 'College ID card is required' }, { status: 400 });
+        }
+
+        // Check if user exists before processing file upload
         const existingUser = await prisma.user.findUnique({
             where: { email }
         });
@@ -30,6 +50,16 @@ export async function POST(req) {
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Validate file type and size
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(idCard.type)) {
+            return NextResponse.json({ error: 'Invalid file type. Please upload a JPG, PNG, or WebP image.' }, { status: 400 });
+        }
+
+        if (idCard.size > 5 * 1024 * 1024) { // 5MB limit
+            return NextResponse.json({ error: 'File size too large. Max limit is 5MB.' }, { status: 400 });
+        }
 
         // Handle ID Card Upload
         let idCardPath = null;

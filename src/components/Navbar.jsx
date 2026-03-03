@@ -12,10 +12,11 @@ import styles from './Navbar.module.css';
 const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/landmarks', label: 'Landmarks' },
-    { href: '/education', label: 'Education' },
     { href: '/diagnosis', label: 'Diagnosis' },
-    { href: '/forensics', label: 'Forensics' },
     { href: '/compare', label: 'Compare' },
+    { href: '/history', label: 'History' },
+    { href: '/education', label: 'Education' },
+    { href: '/forensics', label: 'Forensics' },
     { href: '/tooth-chart', label: 'Charting' },
     { href: '/about', label: 'About' },
 ];

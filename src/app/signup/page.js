@@ -28,6 +28,30 @@ export default function SignupPage() {
         setError('');
 
         const formData = new FormData(e.target);
+        const name = formData.get('name');
+        const email = formData.get('email');
+        const password = formData.get('password');
+        const confirmPassword = formData.get('confirmPassword');
+
+        // Client-side validation
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters long');
+            setLoading(false);
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            setLoading(false);
+            return;
+        }
+
+        if (!idFile) {
+            setError('Please upload your college ID card');
+            setLoading(false);
+            return;
+        }
+
         if (idFile) formData.set('idCard', idFile);
 
         try {
@@ -95,7 +119,11 @@ export default function SignupPage() {
                         </div>
                         <div className={styles.inputGroup}>
                             <FiLock className={styles.icon} />
-                            <input type="password" name="password" placeholder="Password" required />
+                            <input type="password" name="password" placeholder="Password" required minLength={8} />
+                        </div>
+                        <div className={styles.inputGroup}>
+                            <FiLock className={styles.icon} />
+                            <input type="password" name="confirmPassword" placeholder="Confirm Password" required />
                         </div>
                     </div>
 

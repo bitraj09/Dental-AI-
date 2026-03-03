@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const FORENSIC_PROMPT = `You are an expert forensic odontologist. Analyze this dental X-ray image and estimate the subject's age based on visible dental development markers.
+const FORENSIC_PROMPT = `You are an expert forensic odontologist. Analyze this OPG (Orthopantomogram) panoramic X-ray image and estimate the subject's age.
+
+IMPORTANT: This system ONLY accepts OPG (panoramic) radiographs. If the image is not a panoramic OPG dental X-ray, you MUST respond with isValidXray: false.
 
 Evaluate these forensic dental parameters:
 1. Tooth Eruption Status - Which teeth have erupted, partially erupted, or are unerupted
@@ -23,7 +25,7 @@ For each parameter, provide:
 
 IMPORTANT:
 1. Provide your best age estimate based on ALL visible dental indicators
-2. If image is not a dental X-ray, set isValidXray to false
+2. If the image is NOT an OPG dental X-ray, set isValidXray to false and provide explanation in summary.
 3. Be conservative with age ranges for older patients
 
 Respond ONLY with valid JSON:

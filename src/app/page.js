@@ -6,6 +6,7 @@ import { TbDental } from 'react-icons/tb';
 import { HiOutlineAcademicCap } from 'react-icons/hi2';
 import { RiStethoscopeLine } from 'react-icons/ri';
 import { GoLaw } from 'react-icons/go';
+import ToothParticles from '@/components/ToothParticles';
 import styles from './page.module.css';
 
 const features = [
@@ -56,33 +57,8 @@ export default function Home() {
       {/* Hero */}
       <section className={styles.hero}>
         <div className={styles.heroBg}>
-          {/* Animated grid */}
-          <div className={styles.grid} />
-          {/* Floating orbs */}
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={i}
-              className={styles.orb}
-              style={{
-                width: 200 + i * 80,
-                height: 200 + i * 80,
-                left: `${15 + i * 18}%`,
-                top: `${10 + (i % 3) * 25}%`,
-                background: i % 2 === 0
-                  ? 'radial-gradient(circle, rgba(14,165,233,0.12), transparent 70%)'
-                  : 'radial-gradient(circle, rgba(6,214,160,0.1), transparent 70%)',
-              }}
-              animate={{
-                x: [0, 30 * (i % 2 === 0 ? 1 : -1), 0],
-                y: [0, -20 + i * 5, 0],
-              }}
-              transition={{
-                duration: 8 + i * 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
+          {/* Floating cosmic particles */}
+          <ToothParticles orbCount={0} starCount={140} />
         </div>
 
         <div className={`container ${styles.heroContent}`}>
