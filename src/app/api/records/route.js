@@ -53,9 +53,47 @@ export async function GET() {
             orderBy: { createdAt: 'desc' },
         });
 
-        return NextResponse.json({ records });
+        return NextResponse.json({ records }, {
+            headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+        });
     } catch (error) {
         console.error('[Records GET API Error]:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
+export async function DELETE(req) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: 'Record ID is required' }, { status: 400 });
+        }
+
+        const userId = parseInt(session.user.id);
+
+        // Verify the record belongs to the user
+        const record = await prisma.record.findFirst({
+            where: { id: parseInt(id), userId },
+        });
+
+        if (!record) {
+            return NextResponse.json({ error: 'Record not found or unauthorized' }, { status: 404 });
+        }
+
+        await prisma.record.delete({
+            where: { id: parseInt(id) },
+        });
+
+        return NextResponse.json({ message: 'Record deleted successfully' });
+    } catch (error) {
+        console.error('[Records DELETE API Error]:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

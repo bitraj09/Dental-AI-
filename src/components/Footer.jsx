@@ -1,10 +1,17 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TbDental } from 'react-icons/tb';
-import { FiGithub, FiHeart } from 'react-icons/fi';
+import { FiGithub } from 'react-icons/fi';
 import styles from './Footer.module.css';
 
 export default function Footer() {
+    const [year, setYear] = useState(null);
+
+    useEffect(() => {
+        setYear(new Date().getFullYear());
+    }, []);
+
     return (
         <footer className={styles.footer}>
             <div className={`container ${styles.footerInner}`}>
@@ -38,7 +45,7 @@ export default function Footer() {
                     transition={{ delay: 0.2 }}
                 >
                     <p className={styles.copy}>
-                        Made with <FiHeart size={14} className={styles.heart} /> &copy; {new Date().getFullYear()} DentalAI
+                        Made by <span className={styles.team}>BIT Buggy Team</span> &copy; {year} DentalAI
                     </p>
                 </motion.div>
             </div>

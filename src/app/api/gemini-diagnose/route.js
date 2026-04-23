@@ -146,7 +146,13 @@ export async function POST(request) {
             jsonStr = jsonMatch[1].trim();
         }
 
-        const parsed = JSON.parse(jsonStr);
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonStr);
+        } catch (e) {
+            console.warn('[Gemini Diagnose] Failed to parse JSON, assuming invalid X-ray:', responseText.substring(0, 100));
+            return NextResponse.json({ findings: [], summary: 'The uploaded image does not appear to be a valid dental X-ray. Please upload a panoramic dental radiograph.', isValidXray: false });
+        }
 
         if (!parsed.isValidXray) {
             return NextResponse.json({

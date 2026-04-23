@@ -32,6 +32,7 @@
     gap: 10px;
     text-decoration: none;
     color: var(--text-primary);
+    flex-shrink: 0;
 }
 
 .logoIcon {
@@ -55,22 +56,24 @@
 .desktopLinks {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
 }
 
 .navLink {
     position: relative;
-    padding: 8px 16px;
-    font-size: 0.938rem;
+    padding: 8px 12px;
+    font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-secondary);
     text-decoration: none;
     border-radius: var(--radius-sm);
-    transition: color var(--transition-fast);
+    transition: color var(--transition-fast), background var(--transition-fast);
+    white-space: nowrap;
 }
 
 .navLink:hover {
     color: var(--text-primary);
+    background: var(--gradient-card);
 }
 
 .navLink.active {
@@ -80,8 +83,8 @@
 .underline {
     position: absolute;
     bottom: 0;
-    left: 12px;
-    right: 12px;
+    left: 8px;
+    right: 8px;
     height: 2px;
     border-radius: 1px;
     background: var(--gradient-primary);
@@ -91,6 +94,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 .themeBtn {
@@ -119,7 +123,7 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-primary);
 }
@@ -143,15 +147,19 @@
     left: 0;
     right: 0;
     background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border-bottom: 1px solid var(--border-glass);
-    padding: 12px 24px;
+    padding: 16px 24px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .mobileLink {
-    display: block;
+    display: flex;
+    align-items: center;
     padding: 12px 16px;
     font-size: 1rem;
     font-weight: 500;
@@ -167,12 +175,72 @@
     background: var(--gradient-card);
 }
 
-@media (max-width: 768px) {
+/* ---- Mobile Auth Section inside hamburger menu ---- */
+.mobileAuth {
+    display: none;
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border-glass);
+}
+
+/* ===== Responsive Breakpoints ===== */
+
+/* Large screens — hide some link padding for fit */
+@media (max-width: 1280px) {
+    .navLink {
+        padding: 8px 8px;
+        font-size: 0.82rem;
+    }
+}
+
+/* Tablet landscape — switch to hamburger */
+@media (max-width: 1024px) {
     .desktopLinks {
         display: none;
     }
 
     .mobileToggle {
         display: flex;
+    }
+
+    .userPill {
+        display: none;
+    }
+
+    .mobileAuth {
+        display: block;
+    }
+}
+
+/* Tablet portrait */
+@media (max-width: 768px) {
+    .logoText {
+        font-size: 1.2rem;
+    }
+
+    .themeBtn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+    .logoIcon {
+        width: 34px;
+        height: 34px;
+    }
+
+    .logoText {
+        font-size: 1.1rem;
+    }
+
+    .mobileMenu {
+        padding: 12px 16px;
+    }
+
+    .mobileLink {
+        padding: 10px 12px;
+        font-size: 0.95rem;
     }
 }

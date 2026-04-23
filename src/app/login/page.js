@@ -15,6 +15,8 @@ function LoginForm() {
     const [error, setError] = useState('');
     const msg = searchParams.get('msg');
 
+    const isSuper = searchParams.get('super') === '1';
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -30,10 +32,10 @@ function LoginForm() {
         });
 
         if (result.error) {
-            setError('Invalid email or password');
+            setError('Invalid credentials');
             setLoading(false);
         } else {
-            router.push('/diagnosis');
+            router.push(isSuper ? '/superadmin' : '/diagnosis');
         }
     };
 
@@ -54,8 +56,8 @@ function LoginForm() {
                 >
                     <TbDental size={32} />
                 </motion.div>
-                <h1>Welcome Back</h1>
-                <p>Sign in to your student account to access AI‑powered dental analysis tools.</p>
+                <h1>{isSuper ? 'Super Admin Access' : 'Welcome Back'}</h1>
+                <p>{isSuper ? 'Enter Master Credentials' : 'Sign in to your student account to access AI‑powered dental analysis tools.'}</p>
             </div>
 
             {/* Messages */}
@@ -82,15 +84,15 @@ function LoginForm() {
 
             <form onSubmit={handleSubmit} className={styles.form}>
                 <div className={styles.inputGroup}>
-                    <label htmlFor="email">Email Address</label>
+                    <label htmlFor="email">{isSuper ? 'Super Admin ID' : 'Email Address'}</label>
                     <div className={styles.inputInner}>
                         <FiMail className={styles.icon} />
                         <input
                             id="email"
-                            type="email"
+                            type="text"
                             name="email"
-                            placeholder="you@college.edu"
-                            autoComplete="email"
+                            placeholder={isSuper ? "supergod" : "you@college.edu"}
+                            autoComplete="username"
                             required
                         />
                     </div>
@@ -125,12 +127,16 @@ function LoginForm() {
                 </motion.button>
             </form>
 
-            <div className={styles.divider}>or</div>
+            {!isSuper && (
+                <>
+                    <div className={styles.divider}>or</div>
 
-            <div className={styles.footer}>
-                Don&apos;t have an account?{' '}
-                <Link href="/signup">Create Account →</Link>
-            </div>
+                    <div className={styles.footer}>
+                        Don&apos;t have an account?{' '}
+                        <Link href="/signup">Create Account →</Link>
+                    </div>
+                </>
+            )}
         </motion.div>
     );
 }

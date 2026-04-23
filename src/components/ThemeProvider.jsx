@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext({ theme: 'dark', toggleTheme: () => { } });
+const ThemeContext = createContext({ theme: 'dark', toggleTheme: () => { }, mounted: false });
 
 export function useTheme() {
   return useContext(ThemeContext);
@@ -25,8 +25,9 @@ export default function ThemeProvider({ children }) {
     document.documentElement.setAttribute('data-theme', next);
   };
 
+  // No wrapper div — use inline script in layout.js for FOUC prevention instead
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, mounted }}>
       {children}
     </ThemeContext.Provider>
   );

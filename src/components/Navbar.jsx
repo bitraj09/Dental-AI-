@@ -1,15 +1,15 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from './ThemeProvider';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSun, FiMoon, FiMenu, FiX, FiLogOut, FiUser } from 'react-icons/fi';
+import { FiSun, FiMoon, FiMenu, FiX, FiLogOut, FiUser, FiShield } from 'react-icons/fi';
 import { TbDental } from 'react-icons/tb';
 import { useSession, signOut } from 'next-auth/react';
 import styles from './Navbar.module.css';
 
-const navLinks = [
+const baseLinks = [
     { href: '/', label: 'Home' },
     { href: '/landmarks', label: 'Landmarks' },
     { href: '/diagnosis', label: 'Diagnosis' },
@@ -28,9 +28,52 @@ export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [features, setFeatures] = useState(null);
+    const router = useRouter();
+
+    // Hidden admin access — 5 clicks on logo within 3 seconds
+    const logoClickCount = useRef(0);
+    const logoClickTimer = useRef(null);
+
+    const handleLogoClick = useCallback((e) => {
+        logoClickCount.current += 1;
+
+        if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
+
+        if (logoClickCount.current > 5) {
+            e.preventDefault();
+            logoClickCount.current = 0;
+            if (session?.user?.role === 'SUPER_ADMIN') {
+                router.push('/superadmin');
+            } else {
+                router.push('/login?super=1');
+            }
+            return;
+        }
+
+        // Reset counter after 3 seconds of no clicks
+        logoClickTimer.current = setTimeout(() => {
+            logoClickCount.current = 0;
+        }, 3000);
+    }, [router, session]);
+
+    // Filter base links by features
+    const allowedBaseLinks = baseLinks.filter(link => {
+        if (!features) return true; // Show all until loaded
+        if (features[link.label] === false) return false;
+        return true;
+    });
+
+    // Add admin link dynamically if user is admin
+    const navLinks = session?.user?.role === 'ADMIN'
+        ? [...allowedBaseLinks, { href: '/admin', label: 'Admin' }]
+        : session?.user?.role === 'SUPER_ADMIN'
+            ? [...allowedBaseLinks, { href: '/admin', label: 'Admin' }, { href: '/superadmin', label: 'Super Admin' }]
+            : allowedBaseLinks;
 
     useEffect(() => {
         setMounted(true);
+        fetch('/api/config/features').then(res => res.json()).then(data => setFeatures(data)).catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -43,6 +86,16 @@ export default function Navbar() {
         setMobileOpen(false);
     }, [pathname]);
 
+    // Lock body scroll when mobile menu is open
+    useEffect(() => {
+        if (mobileOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [mobileOpen]);
+
     return (
         <motion.nav
             className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}
@@ -51,7 +104,7 @@ export default function Navbar() {
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         >
             <div className={`container ${styles.navInner}`}>
-                <Link href="/" className={styles.logo}>
+                <Link href="/" className={styles.logo} onClick={handleLogoClick}>
                     <motion.div
                         className={styles.logoIcon}
                         whileHover={{ rotate: 15, scale: 1.1 }}
@@ -117,7 +170,7 @@ export default function Navbar() {
                                 </button>
                             </div>
                         ) : (
-                            <Link href="/login" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
+                            <Link href="/login" className={`btn btn-primary ${styles.desktopAuthBtn || ''}`} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
                                 Sign In
                             </Link>
                         )
@@ -148,7 +201,7 @@ export default function Navbar() {
                                 key={link.href}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.05 }}
+                                transition={{ delay: i * 0.04 }}
                             >
                                 <Link
                                     href={link.href}
@@ -158,6 +211,37 @@ export default function Navbar() {
                                 </Link>
                             </motion.div>
                         ))}
+
+                        {/* Auth section in mobile menu */}
+                        <div className={styles.mobileAuth}>
+                            {session ? (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', fontWeight: 600 }}>
+                                        <FiUser size={16} />
+                                        <span>{session.user.name || 'User'}</span>
+                                    </div>
+                                    <button onClick={() => signOut()} className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+                                        <FiLogOut size={16} /> Sign Out
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    style={{ padding: '8px 16px' }}
+                                >
+                                    <Link href="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                        Sign In
+                                    </Link>
+                                </motion.div>
+                            )}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

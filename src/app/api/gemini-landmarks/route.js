@@ -108,7 +108,13 @@ export async function POST(request) {
         const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
         if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-        const parsed = JSON.parse(jsonStr);
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonStr);
+        } catch (e) {
+            console.warn('[Gemini Landmarks] Failed to parse JSON, assuming invalid X-ray:', responseText.substring(0, 100));
+            return NextResponse.json({ landmarks: [], summary: 'This image does not appear to be a valid OPG dental X-ray. It must be a panoramic dental radiograph.', isValidXray: false });
+        }
 
         if (!parsed.isValidXray) {
             return NextResponse.json({ landmarks: [], summary: 'Not a valid dental X-ray.', isValidXray: false });

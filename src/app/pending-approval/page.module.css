@@ -1,0 +1,227 @@
+.page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: var(--bg-primary);
+}
+
+.card {
+    max-width: 520px;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 48px 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+
+.iconWrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.08));
+    color: #f59e0b;
+    margin-bottom: 24px;
+    animation: pulse-icon 2s ease-in-out infinite;
+}
+
+.iconWrapperRejected {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(248, 113, 113, 0.08));
+    color: #ef4444;
+    margin-bottom: 24px;
+}
+
+@keyframes pulse-icon {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 0 16px rgba(245, 158, 11, 0);
+    }
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+.userInfo {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 32px;
+    text-align: left;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.infoRow+.infoRow {
+    border-top: 1px solid var(--border);
+}
+
+.infoLabel {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.infoValue {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Timeline */
+.timeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 32px;
+    padding: 0 20px;
+}
+
+.timelineStep {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    position: relative;
+}
+
+.timelineStep span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.timelineDot {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-full);
+    background: var(--border);
+    border: 3px solid var(--bg-card);
+    box-shadow: 0 0 0 2px var(--border);
+    position: relative;
+    z-index: 1;
+}
+
+.timelineStep.completed .timelineDot {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px #22c55e;
+}
+
+.timelineStep.completed span {
+    color: #22c55e;
+}
+
+.timelineStep.active .timelineDot {
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px #f59e0b, 0 0 12px rgba(245, 158, 11, 0.4);
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.timelineStep.active span {
+    color: #f59e0b;
+    font-weight: 700;
+}
+
+@keyframes pulse-dot {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 2px #f59e0b, 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 2px #f59e0b, 0 0 24px rgba(245, 158, 11, 0.2);
+    }
+}
+
+.timelineStep+.timelineStep::before {
+    content: '';
+    position: absolute;
+    right: 50%;
+    top: 8px;
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+}
+
+.timelineStep.completed+.timelineStep::before,
+.timelineStep.completed+.timelineStep.active::before {
+    background: #22c55e;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.successMessage {
+    padding: 16px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: var(--radius-md);
+    color: #22c55e;
+    font-weight: 500;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -1,0 +1,113 @@
+# 🦷 Dental AI — Project TODO List
+
+## 🚨 HIGH PRIORITY — Admin Approval Platform
+> Jab bhi naya user register kare, seedha access mat do — pehle Admin approve kare!
+
+### 🗄️ Database Changes
+- [ ] **User model mein `status` field add karo** — `PENDING | APPROVED | REJECTED`
+- [ ] **Admin model banana hai** — Ek alag `Admin` table ya `User` mein `role` field (`USER | ADMIN`)
+- [ ] **Prisma migration run karo** — Schema update ke baad `prisma migrate dev`
+
+### 🔐 Auth / Access Control
+- [ ] **Registration flow update** — Naya user register kare toh `status: PENDING` set ho
+- [ ] **Login check** — Login pe check karo: agar `status !== APPROVED` toh access block karo
+- [ ] **Middleware/Guard** — Protected routes pe `PENDING` users ko rok ke "Awaiting Approval" page dikhao
+- [ ] **Session mein status store karo** — NextAuth session mein `status` aur `role` include karo
+
+### 📧 Notifications
+- [ ] **Admin ko email** — Naya user register hone pe Admin ko notification email bhejo
+- [ ] **User ko email** — Jab Admin approve/reject kare tab user ko email aaye
+
+### 🖥️ Admin Dashboard (New Page)
+- [ ] **`/admin` page banana hai** — Sirf Admin role waale access kar sake
+- [ ] **Pending Users List** — Sabhi `PENDING` users ki list dikhao (naam, college, ID card)
+- [ ] **Approve / Reject Button** — Admin ek click mein approve ya reject kar sake
+- [ ] **ID Card Preview** — Admin uploaded college ID card dekh sake before approving
+- [ ] **Approved/Rejected History** — Purane decisions ka log rakho
+
+### 🤖 AI Model Switcher (Admin Control)
+> Admin dashboard pe ek toggle/button hoga jisse Admin decide karega ki system kaunsa AI use kare!
+
+- [ ] **DB mein `activeModel` setting store karo** — Ek `SystemConfig` table banao jisme `activeModel` field ho (`GOOGLE_AI | MOCK_AI | OWN_AI`)
+- [ ] **Admin Dashboard pe Model Selector UI** — Teen cards/buttons banao:
+  - 🔵 **Google AI (Gemini)** — Real Google Gemini API use karega
+  - 🟡 **Mock AI** — Fake/demo response dega (testing ke liye)
+  - 🟢 **Own AI (Custom Model)** — Apna trained dental model use karega
+- [ ] **Active model highlight karo** — Jo model selected ho woh glowing/active dikhe
+- [ ] **API Route banao** — `/api/admin/set-model` — Admin ka choice DB mein save ho
+- [ ] **AI Router banao** — `/api/analyze` mein pehle DB se `activeModel` check karo, phir accordingly call karo
+- [ ] **Users ko pata na chale** — Backend pe silently switch ho, user ko same UI dikhe
+
+### 👤 User Side
+- [ ] **"Awaiting Approval" Page** — Register karne ke baad user ko dikhao ki request pending hai
+- [ ] **Rejection Message** — Reject hone pe reason dikhao
+- [ ] **Re-apply Option** — Reject hone pe user dobara apply kar sake
+
+---
+
+## 🐛 Bugs / Fixes (Abhi Karo)
+- [ ] **Dev Server Cache Fix** — `.next` folder corrupt hota rehta hai, restart pe delete karna padta hai
+- [ ] **Hydration Mismatch** — Footer mein server/client mismatch (just fixed ✅)
+- [ ] **Middleware Warning** — `"middleware"` file deprecated hai, `"proxy"` mein convert karo
+
+---
+
+## ⚙️ Backend / Database
+- [ ] **MySQL Connection** — Production DB ka `DATABASE_URL` [.env](file:///d:/all%20project/dental/.env) mein set karo
+- [ ] **Prisma Migrations** — Schema changes ke baad `prisma migrate deploy` run karo
+- [ ] **Record Schema** — `findings` field JSON hai, proper validation add karo
+- [ ] **User Verification** — College ID card upload ka verification flow banana hai
+
+---
+
+## 🤖 AI Features
+- [ ] **TensorFlow Model** — MobileNet ko dental-specific custom model se replace karo (better accuracy)
+- [ ] **Gemini Prompt** — X-ray findings se better patient summary generate karne ka prompt improve karo
+- [ ] **AI Loading State** — Better loading UI jab AI inference chal raha ho (`LoadingOverlay.jsx`)
+- [ ] **Offline AI** — TF model ko PWA cache mein store karo taaki offline bhi kaam kare
+
+### 🎯 Own Custom AI Integration (Apna Model)
+- [ ] **Custom dental model train karo** — DENTEX ya similar dental X-ray dataset pe train karo
+- [ ] **Model export karo** — TensorFlow.js format ([.json](file:///d:/all%20project/dental/models.json) + `.bin`) mein convert karo
+- [ ] **Model host karo** — `/public/models/` folder mein rakho ya alag server pe deploy karo
+- [ ] **`/api/analyze/own-model` route banao** — Custom model ka inference endpoint
+- [ ] **Model version control** — Admin multiple model versions upload kar sake aur switch kar sake
+- [ ] **Performance metrics** — Har model ki accuracy/speed admin ko dikhe
+
+---
+
+## 🎨 UI / Frontend
+- [ ] **Footer** — "Made by BIT Buggy Team" add kiya ✅
+- [ ] **Navbar** — Mobile responsive check karo
+- [ ] **Dark/Light Mode** — Theme toggle properly test karo sabhi pages pe
+- [ ] **3D Tooth Viewer** — `ToothViewer3D.jsx` mein better lighting/materials add karo
+- [ ] **Landmarks Page** — Fabric.js canvas pe undo/redo feature add karo
+
+---
+
+## 📄 Pages / Features
+- [ ] **Diagnosis Page** — X-ray upload → AI analysis → DB mein save karo (full flow test karo)
+- [ ] **Forensics Page** — `forensicData.js` ka data properly display karo
+- [ ] **Education Page** — Content complete karo `education/page.js`
+- [ ] **History Page** — Patient records delete/export feature add karo
+- [ ] **Dashboard** — Charts mein real DB data connect karo (abhi sample data hai?)
+
+---
+
+## 🔐 Auth / Security
+- [ ] **NextAuth** — Google/Email login properly test karo
+- [ ] **Protected Routes** — Sab pages auth-protected hain? Check karo
+- [ ] **bcrypt** — Password hashing properly implement hai? Verify karo
+
+---
+
+## 📦 Deployment / DevOps
+- [ ] **Docker** — `Dockerfile` ready hai, production build test karo
+- [ ] **GitHub** — Large files (models, images) Git LFS mein move karo
+- [ ] **PWA** — `manifest.json` aur `sw.js` properly working hai? Install test karo
+- [ ] **Environment Variables** — `.env` ka production version set karo (Vercel/Server)
+- [ ] **Build Test** — `npm run build` run karo, koi errors toh nahi?
+
+---
+
+> 💡 **Tip:** Pehle 🐛 Bugs fix karo, phir 🤖 AI features improve karo!

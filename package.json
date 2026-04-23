@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "clean": "rimraf .next",
     "dev": "next dev",
+    "dev:clean": "rimraf .next && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "make-admin": "node scripts/make-admin.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -32,6 +35,7 @@
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "rimraf": "^6.1.3"
   }
 }

@@ -103,7 +103,13 @@ export async function POST(request) {
         const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
         if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-        const parsed = JSON.parse(jsonStr);
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonStr);
+        } catch (e) {
+            console.warn('[Gemini Forensics] Failed to parse JSON, assuming invalid X-ray:', responseText.substring(0, 100));
+            return NextResponse.json({ result: null, summary: 'The uploaded image does not appear to be a valid dental X-ray. Please upload a panoramic dental radiograph.', isValidXray: false });
+        }
 
         if (!parsed.isValidXray) {
             return NextResponse.json({ result: null, summary: 'Not a valid dental X-ray.', isValidXray: false });

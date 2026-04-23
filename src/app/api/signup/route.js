@@ -48,6 +48,17 @@ export async function POST(req) {
             return NextResponse.json({ error: 'User already exists' }, { status: 400 });
         }
 
+        // Check for blocked college types
+        const blockedConfig = await prisma.systemConfig.findUnique({ where: { key: 'BLOCKED_COLLEGES' } });
+        if (blockedConfig && blockedConfig.value) {
+            const blockedList = blockedConfig.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+            const lowerClg = (collegeName || '').toLowerCase();
+            const isBlocked = blockedList.some(block => lowerClg.includes(block));
+            if (isBlocked) {
+                return NextResponse.json({ error: 'Signups from this type of college are currently blocked by the Super Admin.' }, { status: 403 });
+            }
+        }
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -88,6 +99,8 @@ export async function POST(req) {
                 collegeYear: collegeYear || '',
                 collegeIdNumber: collegeIdNumber || '',
                 idCardPath,
+                role: 'USER',
+                status: 'PENDING',
             }
         });
 
