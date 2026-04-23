@@ -1,54 +1,65 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const LANDMARK_PROMPT = `You are an expert cephalometric and dental radiograph analyst. Analyze this OPG (Orthopantomogram) panoramic X-ray image and identify anatomical landmarks.
+const LANDMARK_PROMPT = `You are an expert cephalometric and dental radiograph analyst. Analyze this OPG (Orthopantomogram) panoramic X-ray image and identify anatomical landmarks with polygon contour outlines.
 
 IMPORTANT: This system ONLY accepts OPG (panoramic) radiographs. If the image is not a panoramic OPG dental X-ray, you MUST respond with isValidXray: false.
 
-For each landmark found, provide:
-- id: a short snake_case identifier (e.g. "sella", "nasion", "gonion", "menton", "porion")
-- name: full anatomical name (e.g. "Sella (S)", "Nasion (N)", "Gonion (Go)")
-- xPercent: x position as a percentage of image width (0.0 to 1.0)
-- yPercent: y position as a percentage of image height (0.0 to 1.0)
+For each landmark/anatomical structure found, provide:
+- id: a short snake_case identifier (e.g. "maxillary_sinus", "mandibular_canal", "nasal_septum")
+- name: full anatomical name
+- polygon: An array of [xPercent, yPercent] coordinate pairs (each 0.0 to 1.0) that trace the OUTLINE/CONTOUR of the anatomical structure on the image. Provide at least 6-8 points per structure to form a smooth polygon outline. These should trace the visible boundary of the structure.
 - confidence: detection confidence between 0.78 and 0.99
-- category: one of "skeletal", "dental", "soft_tissue", "airway"
-- description: brief anatomical description of the landmark
-- significance: clinical significance in orthodontics/diagnosis
+- category: one of "mandible", "maxilla", "tmj", "midline", "other"
+- description: brief anatomical description
+- significance: clinical significance
 
-Common landmarks to look for:
-- Skeletal: Sella (S), Nasion (N), Orbitale (Or), Porion (Po), ANS, PNS, Point A, Point B, Gonion (Go), Menton (Me), Gnathion (Gn), Pogonion (Pg), Basion (Ba)
-- Dental: Upper Incisor Tip, Lower Incisor Tip, Upper Molar, Lower Molar
-- Soft Tissue: Soft Tissue Nasion, Pronasale, Subnasale, Labrale Superius, Labrale Inferius, Soft Tissue Pogonion
-- Airway: Superior Pharyngeal Point, Inferior Pharyngeal Point
+Anatomical structures to identify and outline:
+- Mandible: Mental Foramen, Mandibular Canal, Coronoid Process, Angle of Mandible (Gonion), External Oblique Ridge, Genial Tubercle, Inferior Border of Mandible, Sigmoid Notch
+- Maxilla: Maxillary Sinus, Hard Palate, Zygomatic Arch, Maxillary Tuberosity, Inferior Orbital Rim, Incisive Foramen
+- TMJ: Mandibular Condyle, Articular Eminence
+- Midline: Nasal Septum, Nasal Cavity
+- Other: Hyoid Bone, Cervical Spine, Ear Lobe (Ghost Image)
 
 IMPORTANT RULES:
-1. Only report landmarks you can reasonably identify in the image
-2. If the image is NOT an OPG dental X-ray, return empty landmarks array, set isValidXray to false, and provide explanation in summary.
-3. Provide accurate positional estimates based on anatomy
+1. Only report structures you can reasonably identify in the image
+2. If the image is NOT an OPG dental X-ray, return empty landmarks array, set isValidXray to false
+3. The polygon points should trace the visible boundary/contour of each structure
+4. Order polygon points clockwise or counter-clockwise to form a proper closed shape
+5. Use at least 6 points per polygon for smooth outlines, more for complex shapes like the mandibular canal
 
 Respond ONLY with valid JSON:
 {
   "isValidXray": true,
   "landmarks": [
     {
-      "id": "sella",
-      "name": "Sella (S)",
-      "xPercent": 0.48,
-      "yPercent": 0.28,
+      "id": "maxillary_sinus",
+      "name": "Maxillary Sinus",
+      "polygon": [[0.18, 0.22], [0.22, 0.18], [0.28, 0.16], [0.34, 0.18], [0.38, 0.22], [0.39, 0.28], [0.38, 0.34], [0.34, 0.38], [0.28, 0.39], [0.22, 0.38], [0.18, 0.34], [0.17, 0.28]],
       "confidence": 0.94,
-      "category": "skeletal",
-      "description": "Center of sella turcica",
-      "significance": "Reference point for cranial base measurements"
+      "category": "maxilla",
+      "description": "Pneumatic space within the maxilla",
+      "significance": "Important in sinus lift procedures"
     }
   ],
-  "summary": "Brief analysis of the radiograph type and quality"
+  "summary": "Brief analysis of the radiograph"
 }`;
 
+// Vivid instance colors for Gemini-detected landmarks
+const INSTANCE_COLORS = [
+    '#FF6B00', '#00E5FF', '#00FF88', '#FF0055', '#FFD600',
+    '#2196F3', '#E040FB', '#FF4081', '#76FF03', '#FFAB40',
+    '#B388FF', '#64FFDA', '#F48FB1', '#80DEEA', '#B2FF59',
+    '#EA80FC', '#18FFFF', '#FF9100', '#40C4FF', '#CCFF90',
+    '#FF1744', '#00BFA5', '#FFEA00', '#AA00FF', '#C6FF00',
+];
+
 const CATEGORY_COLORS = {
-    skeletal: '#ef4444',
-    dental: '#3b82f6',
-    soft_tissue: '#22c55e',
-    airway: '#f59e0b',
+    mandible: '#a855f7',
+    maxilla: '#ec4899',
+    tmj: '#f59e0b',
+    midline: '#ef4444',
+    other: '#64748b',
 };
 
 export async function POST(request) {
@@ -117,24 +128,44 @@ export async function POST(request) {
         }
 
         if (!parsed.isValidXray) {
-            return NextResponse.json({ landmarks: [], summary: 'Not a valid dental X-ray.', isValidXray: false });
+            return NextResponse.json({ landmarks: [], summary: parsed.summary || 'Not a valid dental X-ray.', isValidXray: false });
         }
 
         const w = imageWidth || 800;
         const h = imageHeight || 600;
 
-        const landmarks = (parsed.landmarks || []).map((lm) => ({
-            id: lm.id,
-            name: lm.name,
-            x: Math.round((lm.xPercent || 0.5) * w),
-            y: Math.round((lm.yPercent || 0.5) * h),
-            confidence: Math.max(0.78, Math.min(0.99, lm.confidence || 0.85)),
-            color: CATEGORY_COLORS[lm.category] || '#a855f7',
-            category: lm.category || 'skeletal',
-            description: lm.description || '',
-            significance: lm.significance || '',
-            typicalPosition: { xPercent: lm.xPercent, yPercent: lm.yPercent },
-        }));
+        const landmarks = (parsed.landmarks || []).map((lm, idx) => {
+            // Convert polygon percentage coordinates to absolute pixels
+            const polygon = (lm.polygon || []).map(([px, py]) => ({
+                x: Math.round((px || 0) * w),
+                y: Math.round((py || 0) * h),
+            }));
+
+            // Compute center of polygon
+            let cx = 0, cy = 0;
+            if (polygon.length > 0) {
+                polygon.forEach(p => { cx += p.x; cy += p.y; });
+                cx = Math.round(cx / polygon.length);
+                cy = Math.round(cy / polygon.length);
+            } else {
+                // Fallback: if no polygon, use center estimate
+                cx = Math.round(0.5 * w);
+                cy = Math.round(0.5 * h);
+            }
+
+            return {
+                id: lm.id,
+                name: lm.name,
+                polygon,
+                centerX: cx,
+                centerY: cy,
+                confidence: Math.max(0.78, Math.min(0.99, lm.confidence || 0.85)),
+                color: INSTANCE_COLORS[idx % INSTANCE_COLORS.length],
+                category: lm.category || 'other',
+                description: lm.description || '',
+                significance: lm.significance || '',
+            };
+        });
 
         return NextResponse.json({
             landmarks,
@@ -148,3 +179,4 @@ export async function POST(request) {
         return NextResponse.json({ error: `Gemini API error: ${error.message}` }, { status: 500 });
     }
 }
+

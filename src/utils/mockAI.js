@@ -126,21 +126,40 @@ const zoneConditionAffinity = {
 
 /**
  * Detects ALL landmarks deterministically for a given image seed.
+ * Returns polygon contour data for each landmark (CVAT-style mask shapes).
  */
 export function detectLandmarks(imageWidth, imageHeight, seed = 0) {
     const { gaussRand, jitter } = createHelpers(seed);
 
     return landmarks.map((lm) => {
-        const xPct = jitter(lm.typicalPosition.xPercent, 0.012);
-        const yPct = jitter(lm.typicalPosition.yPercent, 0.012);
         const conf = parseFloat(gaussRand(0.93, 0.035).toFixed(2));
+
+        // Build polygon from typicalPolygon with slight jitter
+        const offsetX = (jitter(0.5, 0.008) - 0.5); // small random shift
+        const offsetY = (jitter(0.5, 0.008) - 0.5);
+        const polygon = (lm.typicalPolygon || []).map(([px, py]) => ({
+            x: Math.round(Math.max(0, Math.min(1, px + offsetX)) * imageWidth),
+            y: Math.round(Math.max(0, Math.min(1, py + offsetY)) * imageHeight),
+        }));
+
+        // Compute center of polygon for label placement
+        let cx = 0, cy = 0;
+        if (polygon.length > 0) {
+            polygon.forEach(p => { cx += p.x; cy += p.y; });
+            cx = Math.round(cx / polygon.length);
+            cy = Math.round(cy / polygon.length);
+        } else {
+            cx = Math.round(jitter(lm.typicalPosition.xPercent, 0.012) * imageWidth);
+            cy = Math.round(jitter(lm.typicalPosition.yPercent, 0.012) * imageHeight);
+        }
 
         return {
             ...lm,
-            x: Math.round(xPct * imageWidth),
-            y: Math.round(yPct * imageHeight),
+            polygon,
+            centerX: cx,
+            centerY: cy,
             confidence: Math.max(0.78, Math.min(0.99, conf)),
-            color: landmarkCategories[lm.category]?.color || '#a855f7',
+            color: lm.instanceColor || landmarkCategories[lm.category]?.color || '#a855f7',
         };
     });
 }
