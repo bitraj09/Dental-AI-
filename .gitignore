@@ -45,3 +45,4 @@ next-env.d.ts
 # Large data files (exceed GitHub 100MB limit)
 dentex_data/DENTEX/test_data.zip
 dentex_data/DENTEX/validation_data.zip
+.venv/ 
