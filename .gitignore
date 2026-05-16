@@ -46,3 +46,5 @@ next-env.d.ts
 dentex_data/DENTEX/test_data.zip
 dentex_data/DENTEX/validation_data.zip
 .venv/ 
+.venv/ 
+ml-service/.venv/ 
