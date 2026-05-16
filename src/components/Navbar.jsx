@@ -16,6 +16,7 @@ const baseLinks = [
     { href: '/compare', label: 'Compare' },
     { href: '/history', label: 'History' },
     { href: '/education', label: 'Education' },
+    { href: '/landmark-practice', label: 'Practice' },
     { href: '/forensics', label: 'Forensics' },
     { href: '/tooth-chart', label: 'Charting' },
     { href: '/about', label: 'About' },

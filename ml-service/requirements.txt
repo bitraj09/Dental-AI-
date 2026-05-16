@@ -1,0 +1,8 @@
+numpy
+opencv-python-headless
+torch==2.0.0 --index-url https://download.pytorch.org/whl/cpu
+torchvision==0.15.1 --index-url https://download.pytorch.org/whl/cpu
+ultralytics
+fastapi
+uvicorn[standard]
+python-multipart

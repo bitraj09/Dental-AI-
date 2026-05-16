@@ -84,37 +84,65 @@ export default function LandmarksPage() {
         let detected;
         let source = 'mock';
 
-        // Try Gemini API
+        // ── 1. Try YOLO landmark model (denatlyolo.pt) first ─────────────────
         try {
-            const res = await fetch('/api/gemini-landmarks', {
+            const res = await fetch('/api/ml-landmarks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image, imageWidth: imgSize.w, imageHeight: imgSize.h }),
             });
             if (res.ok) {
                 const data = await res.json();
-
-                if (data.isValidXray === false) {
-                    setAiSource('gemini');
-                    setResults([]);
-                    setSummary(data.summary || 'Please upload a valid OPG radiograph.');
-                    setIsValidXray(false);
-                    setLoading(false);
-                    return;
-                }
-
                 if (data.landmarks && data.landmarks.length > 0 && !data.error) {
                     detected = data.landmarks;
-                    source = 'gemini';
-                    setSummary(data.summary || '');
+                    source = 'yolo';
+                    setSummary(data.summary || `YOLO detected ${data.landmarks.length} landmark(s).`);
                     setIsValidXray(true);
+                    console.log('[YOLO Landmarks] Success:', data.landmarks.length, 'structures');
+                } else {
+                    console.warn('[YOLO Landmarks] No detections, falling back to Gemini.');
                 }
+            } else {
+                const err = await res.json().catch(() => ({}));
+                console.warn('[YOLO Landmarks] Service error:', err.error || res.status);
             }
         } catch (err) {
-            console.warn('[Gemini Landmarks] Falling back:', err);
+            console.warn('[YOLO Landmarks] Not reachable, falling back to Gemini:', err.message);
         }
 
-        // Fallback to mock AI
+        // ── 2. Fallback: Gemini API ───────────────────────────────────────────
+        if (!detected) {
+            try {
+                const res = await fetch('/api/gemini-landmarks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image, imageWidth: imgSize.w, imageHeight: imgSize.h }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+
+                    if (data.isValidXray === false) {
+                        setAiSource('gemini');
+                        setResults([]);
+                        setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                        setIsValidXray(false);
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (data.landmarks && data.landmarks.length > 0 && !data.error) {
+                        detected = data.landmarks;
+                        source = 'gemini';
+                        setSummary(data.summary || '');
+                        setIsValidXray(true);
+                    }
+                }
+            } catch (err) {
+                console.warn('[Gemini Landmarks] Falling back to mock:', err);
+            }
+        }
+
+        // ── 3. Final fallback: mock AI ────────────────────────────────────────
         if (!detected) {
             await simulateDelay(2200);
             const seed = getImageSeed(image);
@@ -222,11 +250,23 @@ export default function LandmarksPage() {
                                 </button>
                                 {aiSource && (
                                     <span className={styles.aiBadge} style={{
-                                        background: aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' : 'rgba(100,116,139,0.15)',
-                                        color: aiSource === 'gemini' ? '#818cf8' : '#94a3b8',
-                                        border: `1px solid ${aiSource === 'gemini' ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                                        background:
+                                            aiSource === 'yolo'   ? 'rgba(16,185,129,0.15)' :
+                                            aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' :
+                                            'rgba(100,116,139,0.15)',
+                                        color:
+                                            aiSource === 'yolo'   ? '#34d399' :
+                                            aiSource === 'gemini' ? '#818cf8' :
+                                            '#94a3b8',
+                                        border: `1px solid ${
+                                            aiSource === 'yolo'   ? 'rgba(16,185,129,0.35)' :
+                                            aiSource === 'gemini' ? 'rgba(99,102,241,0.3)'  :
+                                            'rgba(100,116,139,0.2)'
+                                        }`,
                                     }}>
-                                        {aiSource === 'gemini' ? '⚡ Gemini AI' : '🖥 Mock AI'}
+                                        {aiSource === 'yolo'   ? '🎯 YOLO Model' :
+                                         aiSource === 'gemini' ? '⚡ Gemini AI'  :
+                                         '🖥 Mock AI'}
                                     </span>
                                 )}
                                 {results.length > 0 && (

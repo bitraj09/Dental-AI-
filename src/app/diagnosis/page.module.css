@@ -388,3 +388,21 @@
         min-width: 0;
     }
 }
+
+/* Indicator Light */
+.blinkingDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: blink 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+        box-shadow: 0 0 12px currentColor;
+    }
+}

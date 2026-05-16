@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback, lazy, Suspense } from 'react';
+import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiAlertTriangle, FiFileText, FiClock, FiBox, FiSave, FiZap, FiCpu } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
@@ -30,7 +30,18 @@ export default function DiagnosisPage() {
     const [summary, setSummary] = useState('');
     const [isValidXray, setIsValidXray] = useState(true);
     const [patientName, setPatientName] = useState('');
+    const [configuredModel, setConfiguredModel] = useState('GOOGLE_AI');
     const imgRef = useRef(null);
+
+    // Fetch the active model configured in Admin panel
+    useEffect(() => {
+        fetch('/api/config/model')
+            .then(res => res.json())
+            .then(data => {
+                if (data.activeModel) setConfiguredModel(data.activeModel);
+            })
+            .catch(err => console.error("Failed to fetch model config", err));
+    }, []);
 
     const handleImage = useCallback((dataUrl) => {
         setImage(dataUrl);
@@ -41,60 +52,87 @@ export default function DiagnosisPage() {
         setIsValidXray(true);
     }, []);
 
-    // Try Gemini API first, fall back to mock AI
+    // Analyze based on configured model
     const handleAnalyze = async () => {
         if (!image) return;
         setLoading(true);
 
         let results;
-        let source = 'mock';
+        let source = configuredModel;
+        let localSummary = '';
 
-        // Attempt Gemini API
         try {
-            const res = await fetch('/api/gemini-diagnose', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image,
-                    imageWidth: imgSize.w,
-                    imageHeight: imgSize.h,
-                }),
-            });
+            if (configuredModel === 'OWN_AI') {
+                // Call the real ML model (FastAPI Python backend)
+                const res = await fetch('/api/ml-diagnose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image }),
+                });
 
-            if (res.ok) {
-                const data = await res.json();
-
-                // If Gemini explicitly says it's not a valid OPG, don't fall back to mock
-                if (data.isValidXray === false) {
-                    setAiSource('gemini');
-                    setFindings([]);
-                    setSummary(data.summary || 'Please upload a valid OPG radiograph.');
-                    setIsValidXray(false);
-                    setLoading(false);
-                    return; // Stop here
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.findings && !data.error) {
+                        results = data.findings;
+                        setIsValidXray(true);
+                        source = 'OWN_AI';
+                        localSummary = `Detected ${results.length} condition(s) using Custom YOLO model.`;
+                    } else if (data.error) {
+                        throw new Error(`Custom model error: ${data.error}`);
+                    }
+                } else {
+                    const errText = await res.text().catch(() => '');
+                    throw new Error(`Custom ML service returned ${res.status}. Make sure the FastAPI server is running on port 8001. ${errText}`);
                 }
+            } else if (configuredModel === 'GOOGLE_AI') {
+                // Attempt Gemini API
+                const res = await fetch('/api/gemini-diagnose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image, imageWidth: imgSize.w, imageHeight: imgSize.h }),
+                });
 
-                if (data.findings && data.findings.length >= 0 && !data.error) {
-                    results = data.findings;
-                    setIsValidXray(data.isValidXray !== false);
-                    source = 'gemini';
-                    setSummary(data.summary || '');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.isValidXray === false) {
+                        setAiSource('GOOGLE_AI');
+                        setFindings([]);
+                        setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                        setIsValidXray(false);
+                        setLoading(false);
+                        return; // Stop here
+                    }
+                    if (data.findings && !data.error) {
+                        results = data.findings;
+                        setIsValidXray(true);
+                        source = 'GOOGLE_AI';
+                        localSummary = data.summary || '';
+                    }
                 }
             }
         } catch (err) {
-            console.warn('[Gemini] API call failed, falling back:', err);
+            console.error(`Failed to analyze via ${configuredModel}:`, err);
+            // For custom model, show the error to the user instead of silently falling back
+            if (configuredModel === 'OWN_AI') {
+                setIsValidXray(false);
+                setSummary(`❌ Custom model unreachable: ${err.message}`);
+                setLoading(false);
+                return;
+            }
         }
 
-        // Fallback to mock AI
-        if (!results) {
-            await simulateDelay(2800);
+        // Fallback or explicit Mock AI
+        if (!results || configuredModel === 'MOCK_AI') {
+            if (configuredModel !== 'MOCK_AI') console.log(`Falling back from ${configuredModel} to Mock AI...`);
+            await simulateDelay(1500);
             const seed = getImageSeed(image);
             results = diagnoseConditions(imgSize.w, imgSize.h, seed);
-            source = 'mock';
-            setSummary('');
+            source = 'MOCK_AI';
+            localSummary = configuredModel === 'MOCK_AI' ? 'Simulated response from Mock AI.' : 'Fallback: Simulated response.';
         }
-
+        
         setAiSource(source);
+        setSummary(localSummary);
         setFindings(results);
         setLoading(false);
         setPanelOpen(true);
@@ -180,13 +218,24 @@ export default function DiagnosisPage() {
                     <p className="section-subtitle">
                         Upload a panoramic OPG radiograph to detect cavities, impacted teeth, bone loss, and other conditions.
                     </p>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 12 }}>
-                        <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            padding: '5px 14px', borderRadius: 20, fontSize: '0.78rem',
-                            fontWeight: 600, background: 'rgba(99,102,241,0.1)',
-                            color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)',
-                        }}>⚡ Powered by Gemini AI</span>
+                    
+                    {/* Blinking Indicator for Configured Model */}
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 12 }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '6px 16px', borderRadius: 20, fontSize: '0.8rem',
+                            fontWeight: 600, background: 'var(--surface-light)',
+                            color: 'var(--text-primary)', border: '1px solid var(--border-color)',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+                        }}>
+                            <div className={styles.blinkingDot} style={{
+                                backgroundColor: configuredModel === 'OWN_AI' ? '#22c55e' : configuredModel === 'GOOGLE_AI' ? '#6366f1' : '#f59e0b'
+                            }} />
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {configuredModel === 'OWN_AI' ? <FiBox size={14} color="#22c55e" /> : configuredModel === 'GOOGLE_AI' ? <FiZap size={14} color="#6366f1" /> : <FiCpu size={14} color="#f59e0b" />}
+                                {configuredModel === 'OWN_AI' ? 'Custom AI Active' : configuredModel === 'GOOGLE_AI' ? 'Google Gemini Active' : 'Mock AI Active'}
+                            </span>
+                        </div>
                     </div>
                 </motion.div>
 
@@ -236,12 +285,12 @@ export default function DiagnosisPage() {
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
                                     padding: '4px 10px', borderRadius: 20, fontSize: '0.72rem',
                                     fontWeight: 600, letterSpacing: '0.02em',
-                                    background: aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' : 'rgba(100,116,139,0.15)',
-                                    color: aiSource === 'gemini' ? '#818cf8' : '#94a3b8',
-                                    border: `1px solid ${aiSource === 'gemini' ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                                    background: aiSource === 'GOOGLE_AI' ? 'rgba(99,102,241,0.15)' : aiSource === 'OWN_AI' ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+                                    color: aiSource === 'GOOGLE_AI' ? '#818cf8' : aiSource === 'OWN_AI' ? '#4ade80' : '#fbbf24',
+                                    border: `1px solid ${aiSource === 'GOOGLE_AI' ? 'rgba(99,102,241,0.3)' : aiSource === 'OWN_AI' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
                                 }}>
-                                    {aiSource === 'gemini' ? <FiZap size={12} /> : <FiCpu size={12} />}
-                                    {aiSource === 'gemini' ? 'Gemini AI' : 'Mock AI'}
+                                    {aiSource === 'GOOGLE_AI' ? <FiZap size={12} /> : aiSource === 'OWN_AI' ? <FiBox size={12} /> : <FiCpu size={12} />}
+                                    {aiSource === 'GOOGLE_AI' ? 'Gemini AI' : aiSource === 'OWN_AI' ? 'Custom AI' : 'Mock AI'}
                                 </span>
                             )}
                             {findings.length > 0 && (
@@ -341,25 +390,28 @@ export default function DiagnosisPage() {
                             })}
                         </div>
 
-                        {/* Gemini AI Summary */}
-                        {summary && aiSource === 'gemini' && isValidXray && (
+                        {/* Summary */}
+                        {summary && isValidXray && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 style={{
                                     marginTop: 16, padding: '12px 16px',
-                                    background: 'rgba(99,102,241,0.08)',
-                                    border: '1px solid rgba(99,102,241,0.2)',
+                                    background: aiSource === 'GOOGLE_AI' ? 'rgba(99,102,241,0.08)' : aiSource === 'OWN_AI' ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
+                                    border: `1px solid ${aiSource === 'GOOGLE_AI' ? 'rgba(99,102,241,0.2)' : aiSource === 'OWN_AI' ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'}`,
                                     borderRadius: 10, fontSize: '0.85rem',
                                     color: 'var(--text-secondary)', lineHeight: 1.5,
                                 }}
                             >
-                                <strong style={{ color: '#818cf8' }}>🤖 Gemini Analysis:</strong> {summary}
+                                <strong style={{ color: aiSource === 'GOOGLE_AI' ? '#818cf8' : aiSource === 'OWN_AI' ? '#4ade80' : '#fbbf24' }}>
+                                    {aiSource === 'GOOGLE_AI' ? '🤖 Gemini Analysis: ' : aiSource === 'OWN_AI' ? '🤖 Custom AI: ' : '🤖 Mock AI: '}
+                                </strong> 
+                                {summary}
                             </motion.div>
                         )}
 
                         {/* Error Alert for Invalid X-ray */}
-                        {summary && aiSource === 'gemini' && !isValidXray && (
+                        {summary && !isValidXray && (
                             <motion.div
                                 className={styles.errorAlert}
                                 initial={{ opacity: 0, scale: 0.95 }}
