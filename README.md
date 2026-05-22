@@ -50,3 +50,25 @@ Services:
 - MySQL: localhost:3306
 
 The web container uses `ML_SERVICE_URL=http://ml-service:8001` so the API routes can reach the Python container inside Compose.
+
+## Manual Start
+
+If you want to run the app manually instead of Docker, open two terminals from the project root and use these commands:
+
+Frontend:
+
+```bash
+npm run dev
+```
+
+ML service:
+
+```powershell
+cd ml-service
+.venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8001
+```
+
+Then open:
+
+- Web app: http://localhost:3000
+- ML service: http://127.0.0.1:8001
