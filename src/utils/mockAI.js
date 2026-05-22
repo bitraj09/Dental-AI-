@@ -283,21 +283,12 @@ export function estimateAge(seed = 0) {
 
 // ── Education Quiz ───────────────────────────────────────────────────
 
-/**
- * Quiz questions use normal Math.random() since we want different
- * questions each time (not image-dependent).
- */
-export function generateQuizQuestion(excludeIds = []) {
-    const available = landmarks.filter((l) => !excludeIds.includes(l.id));
-    if (available.length === 0) return null;
-
-    const target = available[Math.floor(Math.random() * available.length)];
-
+function buildQuizQuestion(target, excludeIds = []) {
     const sameCategory = landmarks.filter(
-        (l) => l.id !== target.id && l.category === target.category
+        (l) => l.id !== target.id && l.category === target.category && !excludeIds.includes(l.id)
     );
     const otherCategory = landmarks.filter(
-        (l) => l.id !== target.id && l.category !== target.category
+        (l) => l.id !== target.id && l.category !== target.category && !excludeIds.includes(l.id)
     );
 
     let distractors = [];
@@ -318,4 +309,21 @@ export function generateQuizQuestion(excludeIds = []) {
         options: options.map((o) => ({ id: o.id, name: o.name })),
         correctId: target.id,
     };
+}
+
+/**
+ * Quiz questions use normal Math.random() since we want different
+ * questions each time (not image-dependent).
+ */
+export function generateQuizQuestion(excludeIds = []) {
+    const available = landmarks.filter((l) => !excludeIds.includes(l.id));
+    if (available.length === 0) return null;
+
+    const target = available[Math.floor(Math.random() * available.length)];
+    return buildQuizQuestion(target, excludeIds);
+}
+
+export function generateQuizQuestionFromLandmark(target, excludeIds = []) {
+    if (!target) return null;
+    return buildQuizQuestion(target, excludeIds);
 }

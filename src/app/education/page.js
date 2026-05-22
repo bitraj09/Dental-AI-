@@ -1,9 +1,10 @@
 'use client';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheck, FiX, FiRefreshCw, FiAward, FiTarget, FiClock } from 'react-icons/fi';
+import { FiCheck, FiX, FiRefreshCw, FiAward, FiTarget, FiClock, FiBox, FiZap, FiCpu } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
-import { generateQuizQuestion } from '@/utils/mockAI';
+import landmarks from '@/data/landmarkData';
+import { generateQuizQuestion, generateQuizQuestionFromLandmark } from '@/utils/mockAI';
 import styles from './page.module.css';
 
 const TOTAL_QUESTIONS = 10;
@@ -18,6 +19,7 @@ const TIME_OPTIONS = [
 export default function EducationPage() {
     const [image, setImage] = useState(null);
     const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
+    const [configuredModel, setConfiguredModel] = useState('GOOGLE_AI');
     const [quizState, setQuizState] = useState('idle'); // idle, playing, answered, finished
     const [question, setQuestion] = useState(null);
     const [score, setScore] = useState(0);
@@ -25,25 +27,137 @@ export default function EducationPage() {
     const [answered, setAnswered] = useState(null); // selected option id
     const [usedIds, setUsedIds] = useState([]);
     const [history, setHistory] = useState([]);
+    const [detectedLandmarks, setDetectedLandmarks] = useState([]);
     const [timeLeft, setTimeLeft] = useState(30);
     const [selectedTime, setSelectedTime] = useState(30);
     const timerRef = useRef(null);
     const imgRef = useRef(null);
 
+    useEffect(() => {
+        fetch('/api/admin/set-model', { cache: 'no-store' })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.activeModel) setConfiguredModel(data.activeModel);
+            })
+            .catch(() => {});
+    }, []);
+
     const handleImage = useCallback((dataUrl) => {
         setImage(dataUrl);
     }, []);
 
-    const startQuiz = () => {
+    const normalizeName = (value = '') => value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+    const matchLandmark = (detection) => {
+        const detectionName = normalizeName(detection?.name || detection?.id || '');
+        return landmarks.find((landmark) => {
+            const landmarkName = normalizeName(landmark.name);
+            const landmarkId = normalizeName(landmark.id);
+            return detectionName === landmarkName || detectionName === landmarkId;
+        }) || null;
+    };
+
+    const buildQuestion = async (excludeIds = []) => {
+        if (configuredModel === 'OWN_AI' && image) {
+            try {
+                const res = await fetch('/api/ml-landmarks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image, imageWidth: imgSize.w, imageHeight: imgSize.h }),
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const matched = (data.landmarks || [])
+                        .map(matchLandmark)
+                        .filter((landmark) => landmark && !excludeIds.includes(landmark.id));
+
+                    if (matched.length > 0) {
+                        const target = matched[Math.floor(Math.random() * matched.length)];
+                        return generateQuizQuestionFromLandmark(target, excludeIds);
+                    }
+                }
+            } catch {
+                // Fall back to the random quiz generator below.
+            }
+        }
+
+        return generateQuizQuestion(excludeIds);
+    };
+
+    const startQuiz = async () => {
         setScore(0);
         setQuestionNum(1);
         setUsedIds([]);
         setHistory([]);
-        const q = generateQuizQuestion([]);
+        setAnswered(null);
+        setQuizState('loading');
+        setTimeLeft(selectedTime);
+
+        // If custom model active, try to get full detection list to make a sequential quiz
+        if (configuredModel === 'OWN_AI' && image) {
+            try {
+                const res = await fetch('/api/ml-landmarks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image, imageWidth: imgSize.w, imageHeight: imgSize.h }),
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    // Keep both detection + matched landmark so we can show the exact detection polygon
+                    const matched = (data.landmarks || [])
+                        .map((d) => {
+                            const lm = matchLandmark(d);
+                            if (!lm) return null;
+
+                            const polyPixels = d.polygon || [];
+                            const polyPct = polyPixels.map(p => [ (p.x || p[0]) / (imgSize.w || 1), (p.y || p[1]) / (imgSize.h || 1) ]);
+                            const cx = polyPct.length ? polyPct.reduce((s,p)=>s+p[0],0)/polyPct.length : (lm.typicalPosition?.xPercent||0.5);
+                            const cy = polyPct.length ? polyPct.reduce((s,p)=>s+p[1],0)/polyPct.length : (lm.typicalPosition?.yPercent||0.5);
+
+                            const lmModified = { ...lm, typicalPolygon: polyPct.length ? polyPct : lm.typicalPolygon, typicalPosition: { xPercent: cx, yPercent: cy } };
+
+                            return { detection: d, landmark: lmModified };
+                        })
+                        .filter(Boolean);
+
+                    if (matched.length > 0) {
+                        // Build a target that uses the detection polygon (converted to percent coords)
+                        const first = matched[0];
+                        const det = first.detection;
+                        const lm = { ...first.landmark };
+                        // detection polygon may be array of {x,y} in pixels
+                        const polyPixels = det.polygon || det.polygon || [];
+                        const polyPct = polyPixels.map(p => [ (p.x || p[0]) / imgSize.w, (p.y || p[1]) / imgSize.h ]);
+                        // centroid
+                        const cx = polyPct.length ? polyPct.reduce((s,p)=>s+p[0],0)/polyPct.length : (lm.typicalPosition?.xPercent||0.5);
+                        const cy = polyPct.length ? polyPct.reduce((s,p)=>s+p[1],0)/polyPct.length : (lm.typicalPosition?.yPercent||0.5);
+                        lm.typicalPolygon = polyPct;
+                        lm.typicalPosition = { xPercent: cx, yPercent: cy };
+
+                        // Save matched list and start quiz with the detection-aware target
+                        setDetectedLandmarks(matched);
+                        const firstQ = generateQuizQuestionFromLandmark(lm, []);
+                        setQuestion(firstQ);
+                        setQuizState('playing');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch landmarks for quiz, falling back to random questions', e);
+            }
+        }
+
+        // Fallback: random questions
+        const q = await buildQuestion([]);
+        if (!q) {
+            setQuizState('idle');
+            return;
+        }
+
         setQuestion(q);
         setQuizState('playing');
-        setAnswered(null);
-        setTimeLeft(selectedTime);
     };
 
     const handleAnswer = (optionId) => {
@@ -58,10 +172,30 @@ export default function EducationPage() {
 
     const nextQuestion = () => {
         const nextNum = questionNum + 1;
+        // If we have a detected-landmark sequence, step through it first
+        if (detectedLandmarks && detectedLandmarks.length > 0) {
+            const idx = questionNum; // zero-based index = questionNum
+            if (idx >= detectedLandmarks.length || nextNum > TOTAL_QUESTIONS) {
+                setQuizState('finished');
+                return;
+            }
+            const entry = detectedLandmarks[idx];
+            const targetLandmark = entry.landmark || entry;
+            const q = generateQuizQuestionFromLandmark(targetLandmark, [...usedIds]);
+            setQuestionNum(nextNum);
+            setQuestion(q);
+            setAnswered(null);
+            setUsedIds((u) => [...u, (targetLandmark.id || targetLandmark.name)]);
+            setTimeLeft(selectedTime);
+            setQuizState('playing');
+            return;
+        }
+
         if (nextNum > TOTAL_QUESTIONS) {
             setQuizState('finished');
             return;
         }
+
         const newUsed = [...usedIds, question.correctId];
         setUsedIds(newUsed);
         setQuestionNum(nextNum);
@@ -115,6 +249,18 @@ export default function EducationPage() {
                     <p className="section-subtitle">
                         Test your knowledge — identify dental landmarks on radiographs and get instant AI feedback.
                     </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '6px 16px', borderRadius: 20, fontSize: '0.8rem',
+                            fontWeight: 600, background: 'var(--surface-light)',
+                            color: 'var(--text-primary)', border: '1px solid var(--border-color)',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+                        }}>
+                            {configuredModel === 'OWN_AI' ? <FiBox size={14} color="#22c55e" /> : configuredModel === 'GOOGLE_AI' ? <FiZap size={14} color="#6366f1" /> : <FiCpu size={14} color="#f59e0b" />}
+                            <span>{configuredModel === 'OWN_AI' ? 'Custom AI linked to quiz mode' : configuredModel === 'GOOGLE_AI' ? 'Gemini mode ready' : 'Mock quiz mode'}</span>
+                        </div>
+                    </div>
                 </motion.div>
 
                 {!image ? (
