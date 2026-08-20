@@ -4,6 +4,42 @@ DentalAI is an advanced, AI-powered dental imaging and diagnostics assistant des
 
 ---
 
+## Docker Deployment
+
+1. Create deployment environment file.
+
+```bash
+cp .env.docker.example .env
+```
+
+2. Edit `.env` and set secure values for:
+- `MYSQL_ROOT_PASSWORD`
+- `MYSQL_PASSWORD`
+- `NEXTAUTH_SECRET`
+- `ML_API_KEY`
+
+3. Build and start services.
+
+```bash
+docker compose up -d --build
+```
+
+4. Verify service status.
+
+```bash
+docker compose ps
+docker compose logs -f web
+```
+
+5. Open the app at `http://localhost:3000`.
+
+Notes:
+- The `web` container waits for healthy `mysql` and `ml-service` containers.
+- DB migrations run on startup when `RUN_DB_MIGRATIONS=true`.
+- Readiness is exposed at `/api/health`.
+
+---
+
 ## 🔒 User Verification & Role Workflows
 
 The platform secures patient data and system access through a structured user approval workflow and role-based permissions:

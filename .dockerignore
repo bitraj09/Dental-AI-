@@ -10,5 +10,9 @@ opg
 docs
 dentex_data
 public/uploads
+ml-service
+DentalXrayAI
+recovery
+best.pt
 *.tar.gz
 *.zip

