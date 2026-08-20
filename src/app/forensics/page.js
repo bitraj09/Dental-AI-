@@ -244,7 +244,7 @@ export default function ForensicsPage() {
                         )}
 
                         {/* Error Alert for Invalid X-ray */}
-                        {summary && aiSource === 'gemini' && !isValidXray && (
+                        {summary && !isValidXray && (
                             <motion.div
                                 className={styles.errorAlert}
                                 initial={{ opacity: 0, scale: 0.95 }}

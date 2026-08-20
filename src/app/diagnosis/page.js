@@ -72,11 +72,19 @@ export default function DiagnosisPage() {
 
                 if (res.ok) {
                     const data = await res.json();
+                    if (data.isValidXray === false) {
+                        setAiSource('OWN_AI');
+                        setFindings([]);
+                        setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                        setIsValidXray(false);
+                        setLoading(false);
+                        return;
+                    }
                     if (data.findings && !data.error) {
                         results = data.findings;
                         setIsValidXray(true);
                         source = 'OWN_AI';
-                        localSummary = `Detected ${results.length} condition(s) using Custom YOLO model.`;
+                        localSummary = `Detected ${results.length} condition(s) using Custom AI model.`;
                     } else if (data.error) {
                         throw new Error(`Custom model error: ${data.error}`);
                     }

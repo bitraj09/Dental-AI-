@@ -93,10 +93,18 @@ export default function LandmarksPage() {
             });
             if (res.ok) {
                 const data = await res.json();
+                if (data.isValidXray === false) {
+                    setAiSource('yolo');
+                    setResults([]);
+                    setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                    setIsValidXray(false);
+                    setLoading(false);
+                    return;
+                }
                 if (data.landmarks && data.landmarks.length > 0 && !data.error) {
                     detected = data.landmarks;
                     source = 'yolo';
-                    setSummary(data.summary || `YOLO detected ${data.landmarks.length} landmark(s).`);
+                    setSummary(data.summary || `Custom AI detected ${data.landmarks.length} landmark(s).`);
                     setIsValidXray(true);
                     console.log('[YOLO Landmarks] Success:', data.landmarks.length, 'structures');
                 } else {
@@ -264,7 +272,7 @@ export default function LandmarksPage() {
                                             'rgba(100,116,139,0.2)'
                                         }`,
                                     }}>
-                                        {aiSource === 'yolo'   ? '🎯 YOLO Model' :
+                                        {aiSource === 'yolo'   ? '🎯 Custom AI' :
                                          aiSource === 'gemini' ? '⚡ Gemini AI'  :
                                          '🖥 Mock AI'}
                                     </span>
@@ -478,7 +486,7 @@ export default function LandmarksPage() {
                         </div>
 
                         {/* Sidebar */}
-                        {(results.length > 0 || (summary && aiSource === 'gemini' && !isValidXray)) && (
+                        {(results.length > 0 || (summary && !isValidXray)) && (
                             <motion.aside
                                 className={styles.sidebar}
                                 initial={{ opacity: 0, x: 40 }}
@@ -500,7 +508,7 @@ export default function LandmarksPage() {
                                 </div>
 
                                 {/* Error Alert for Invalid X-ray */}
-                                {summary && aiSource === 'gemini' && !isValidXray && (
+                                {summary && !isValidXray && (
                                     <motion.div
                                         className={styles.errorAlert}
                                         initial={{ opacity: 0, y: -10 }}

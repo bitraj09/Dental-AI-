@@ -143,6 +143,28 @@ def bbox_to_polygon(box_xyxy):
     ]
 
 # ─── Root ─────────────────────────────────────────────────────────────────────
+def check_result_is_valid_opg(result) -> bool:
+    """
+    Checks if a YOLO prediction result contains a set of landmark detections
+    consistent with a valid panoramic dental OPG radiograph.
+    """
+    if result.boxes is None or len(result.boxes) == 0:
+        return False
+        
+    boxes = result.boxes
+    high_conf_detections = [box for box in boxes if float(box.conf[0].item()) >= 0.22]
+    unique_classes = set(int(box.cls[0].item()) for box in high_conf_detections)
+    
+    if len(boxes) > 0:
+        max_conf = max(float(box.conf[0].item()) for box in boxes)
+    else:
+        max_conf = 0.0
+
+    if len(high_conf_detections) >= 3 or len(unique_classes) >= 2 or max_conf >= 0.45:
+        return True
+        
+    return False
+
 @app.get("/")
 def read_root():
     return {
@@ -160,6 +182,16 @@ async def analyze(file: UploadFile = File(...)):
     contents = await file.read()
     nparr = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    # Validate image using landmark model (offline check)
+    if landmark_model is not None:
+        landmark_results = landmark_model(img, conf=0.05, iou=0.4, verbose=False)
+        if not check_result_is_valid_opg(landmark_results[0]):
+            return {
+                "detections": [],
+                "annotated_image": None,
+                "isValidXray": False,
+            }
 
     results = diagnosis_model(img)
     annotated_img = results[0].plot()
@@ -182,6 +214,7 @@ async def analyze(file: UploadFile = File(...)):
     return {
         "detections": detections,
         "annotated_image": f"data:image/jpeg;base64,{base64_img}",
+        "isValidXray": True,
     }
 
 # ─── Landmark endpoint ────────────────────────────────────────────────────────
@@ -202,6 +235,17 @@ async def detect_landmarks(file: UploadFile = File(...)):
     # Default YOLO conf=0.25 is often too strict for medical models
     results = landmark_model(img, conf=0.05, iou=0.4, verbose=True)
     result = results[0]
+
+    # Validate image using the results we just generated
+    if not check_result_is_valid_opg(result):
+        return {
+            "landmarks": [],
+            "annotated_image": None,
+            "model": "denatlyolo.pt",
+            "image_width": img_w,
+            "image_height": img_h,
+            "isValidXray": False,
+        }
 
     raw_boxes = len(result.boxes) if result.boxes is not None else 0
     raw_masks = len(result.masks) if result.masks is not None else 0

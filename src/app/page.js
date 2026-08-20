@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { FiArrowRight } from 'react-icons/fi';
 import { TbDental } from 'react-icons/tb';
 import { HiOutlineAcademicCap } from 'react-icons/hi2';
@@ -52,6 +53,9 @@ const stats = [
 ];
 
 export default function Home() {
+  const { status } = useSession();
+  const getStartedHref = status === 'authenticated' ? '/landmarks' : '/login';
+
   return (
     <div className={styles.page}>
       {/* Hero */}
@@ -99,7 +103,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            <Link href="/login" className="btn btn-primary">
+            <Link href={getStartedHref} className="btn btn-primary">
               Get Started <FiArrowRight />
             </Link>
             <Link href="/education" className="btn btn-outline">

@@ -17,7 +17,6 @@ export async function proxy(request) {
     const publicRoutes = [
         "/",
         "/about",
-        "/education",
         "/login",
         "/signup",
         "/pending-approval",
@@ -83,5 +82,7 @@ export const config = {
         "/api/gemini-diagnose/:path*",
         "/api/gemini-forensics/:path*",
         "/api/gemini-landmarks/:path*",
+        "/education/:path*",
+        "/landmark-practice/:path*",
     ],
 };
