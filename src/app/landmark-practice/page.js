@@ -186,7 +186,7 @@ export default function LandmarkPracticePage() {
     const [showGuidance, setShowGuidance] = useState(false);
 
     useEffect(() => {
-        fetch('/api/admin/set-model').then(r => r.json()).then(d => { if (d.activeModel) setConfiguredModel(d.activeModel); }).catch(() => {});
+        fetch('/api/config/model').then(r => r.json()).then(d => { if (d.activeModel) setConfiguredModel(d.activeModel); }).catch(() => {});
     }, []);
 
     const handleImage = useCallback((dataUrl) => {
@@ -288,12 +288,15 @@ export default function LandmarkPracticePage() {
         })();
     };
 
-    const handleCanvasClick = (e) => {
-        if (isPolygonClosed || !currentLandmark || result) return;
+    const [isDrawing, setIsDrawing] = useState(false);
+
+    const handleCanvasMouseDown = (e) => {
+        if (result || !currentLandmark) return;
         const svg = svgRef.current;
         if (!svg) return;
         const rect = svg.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
+        
         const xPct = (e.clientX - rect.left) / rect.width;
         const yPct = (e.clientY - rect.top) / rect.height;
         if (!Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
@@ -301,16 +304,90 @@ export default function LandmarkPracticePage() {
         const clampedX = Math.max(0, Math.min(1, xPct));
         const clampedY = Math.max(0, Math.min(1, yPct));
 
-        // Close polygon if clicking near first point
-        if (drawingPoints.length >= 3) {
-            const first = drawingPoints[0];
-            const closeDist = Math.sqrt((clampedX - first[0]) ** 2 + (clampedY - first[1]) ** 2);
-            if (closeDist < 0.025) {
-                setIsPolygonClosed(true);
-                return;
+        setDrawingPoints([[clampedX, clampedY]]);
+        setIsPolygonClosed(false);
+        setIsDrawing(true);
+    };
+
+    const handleCanvasMouseMove = (e) => {
+        if (!isDrawing || result || !currentLandmark) return;
+        const svg = svgRef.current;
+        if (!svg) return;
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        
+        const xPct = (e.clientX - rect.left) / rect.width;
+        const yPct = (e.clientY - rect.top) / rect.height;
+        if (!Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
+
+        const clampedX = Math.max(0, Math.min(1, xPct));
+        const clampedY = Math.max(0, Math.min(1, yPct));
+
+        setDrawingPoints((prev) => {
+            if (prev.length > 0) {
+                const last = prev[prev.length - 1];
+                const dist = Math.sqrt((clampedX - last[0]) ** 2 + (clampedY - last[1]) ** 2);
+                if (dist < 0.006) return prev;
             }
-        }
-        setDrawingPoints(prev => [...prev, [clampedX, clampedY]]);
+            return [...prev, [clampedX, clampedY]];
+        });
+    };
+
+    const handleCanvasMouseUp = () => {
+        if (!isDrawing) return;
+        setIsDrawing(false);
+        setDrawingPoints((prev) => {
+            if (prev.length >= 3) {
+                setIsPolygonClosed(true);
+            }
+            return prev;
+        });
+    };
+
+    const handleCanvasTouchStart = (e) => {
+        if (result || !currentLandmark || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const svg = svgRef.current;
+        if (!svg) return;
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        
+        const xPct = (touch.clientX - rect.left) / rect.width;
+        const yPct = (touch.clientY - rect.top) / rect.height;
+        if (!Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
+
+        const clampedX = Math.max(0, Math.min(1, xPct));
+        const clampedY = Math.max(0, Math.min(1, yPct));
+
+        setDrawingPoints([[clampedX, clampedY]]);
+        setIsPolygonClosed(false);
+        setIsDrawing(true);
+    };
+
+    const handleCanvasTouchMove = (e) => {
+        if (!isDrawing || result || !currentLandmark || e.touches.length === 0) return;
+        e.preventDefault(); // Prevent scrolling on touch screens while drawing
+        const touch = e.touches[0];
+        const svg = svgRef.current;
+        if (!svg) return;
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        
+        const xPct = (touch.clientX - rect.left) / rect.width;
+        const yPct = (touch.clientY - rect.top) / rect.height;
+        if (!Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
+
+        const clampedX = Math.max(0, Math.min(1, xPct));
+        const clampedY = Math.max(0, Math.min(1, yPct));
+
+        setDrawingPoints((prev) => {
+            if (prev.length > 0) {
+                const last = prev[prev.length - 1];
+                const dist = Math.sqrt((clampedX - last[0]) ** 2 + (clampedY - last[1]) ** 2);
+                if (dist < 0.006) return prev;
+            }
+            return [...prev, [clampedX, clampedY]];
+        });
     };
 
     const undoLastPoint = () => {
@@ -568,7 +645,7 @@ export default function LandmarkPracticePage() {
     const scorePercent = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
     const normalizedDrawingPoints = normalizePolygon(drawingPoints);
     const pointsStr = polygonToSvgPoints(normalizedDrawingPoints);
-    const pointsPath = pointsToPath(normalizedDrawingPoints);
+    const pointsPath = pointsToPath(normalizedDrawingPoints) + (isPolygonClosed ? ' Z' : '');
     const guidancePolygon = normalizePolygon(currentLandmark?.typicalPolygon);
     const guidanceCenter = guidancePolygon.length >= 3
         ? polygonCentroid(guidancePolygon)
@@ -736,13 +813,19 @@ export default function LandmarkPracticePage() {
                                 <img ref={imgRef} src={image} alt="OPG Radiograph" className={styles.radiograph} onLoad={onImgLoad} />
                                 <svg ref={svgRef} className={`${styles.drawingOverlay} ${!result && !isPolygonClosed ? styles.drawingCursor : ''}`}
                                     viewBox="0 0 100 100" preserveAspectRatio="none"
-                                    onClick={!result ? handleCanvasClick : undefined}
+                                    onMouseDown={handleCanvasMouseDown}
+                                    onMouseMove={handleCanvasMouseMove}
+                                    onMouseUp={handleCanvasMouseUp}
+                                    onMouseLeave={handleCanvasMouseUp}
+                                    onTouchStart={handleCanvasTouchStart}
+                                    onTouchMove={handleCanvasTouchMove}
+                                    onTouchEnd={handleCanvasMouseUp}
                                 >
-                                    {/* Student polygon */}
-                                    {drawingPoints.length >= 2 && !isPolygonClosed && (
+                                    {/* Student path (masking line) */}
+                                    {drawingPoints.length >= 2 && (
                                         <>
                                             <path d={pointsPath}
-                                                fill="none"
+                                                fill={isPolygonClosed ? "rgba(99,102,241,0.2)" : "none"}
                                                 stroke="rgba(99,102,241,0.18)"
                                                 strokeWidth="8"
                                                 strokeLinecap="round"
@@ -750,27 +833,15 @@ export default function LandmarkPracticePage() {
                                                 vectorEffect="non-scaling-stroke"
                                             />
                                             <path d={pointsPath}
-                                                fill="none"
+                                                fill={isPolygonClosed ? "rgba(99,102,241,0.2)" : "none"}
                                                 stroke="#6366f1"
-                                                strokeWidth="2.2"
+                                                strokeWidth="2.5"
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 vectorEffect="non-scaling-stroke"
                                             />
                                         </>
                                     )}
-                                    {isPolygonClosed && drawingPoints.length >= 3 && (
-                                        <polygon points={pointsStr} fill="rgba(99,102,241,0.2)"
-                                            stroke="#6366f1" strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinejoin="round"
-                                        />
-                                    )}
-                                    {/* Vertex dots */}
-                                    {normalizedDrawingPoints.map((p, i) => (
-                                        <circle key={i} cx={p[0] * 100} cy={p[1] * 100} r="0.8"
-                                            fill={i === 0 ? '#22c55e' : '#6366f1'} stroke="#fff" strokeWidth="0.3"
-                                            vectorEffect="non-scaling-stroke" className={styles.vertex}
-                                        />
-                                    ))}
                                     {/* Correct polygon overlay after evaluation */}
                                     {result && correctPolyPoints && (
                                         <motion.polygon points={correctPolyPoints}

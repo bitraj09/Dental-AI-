@@ -8,15 +8,29 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import ResultsPanel from '@/components/ResultsPanel';
 import ReportGenerator from '@/components/ReportGenerator';
 import { diagnoseConditions, simulateDelay, getImageSeed } from '@/utils/mockAI';
+import { useDentalState } from '@/context/DentalStateContext';
 import styles from './page.module.css';
 
 // Dynamic import for Three.js (no SSR)
 const ToothViewer3D = lazy(() => import('@/components/ToothViewer3D'));
 
 export default function DiagnosisPage() {
-    const [image, setImage] = useState(null);
-    const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
-    const [findings, setFindings] = useState([]);
+    const {
+        sharedImage: image,
+        updateActiveImage,
+        imageSize: imgSize,
+        setImageSize: setImgSize,
+        diagnosisState,
+        setDiagnosisState
+    } = useDentalState();
+
+    const { findings, summary, isValidXray, aiSource } = diagnosisState;
+
+    const setFindings = (val) => setDiagnosisState(prev => ({ ...prev, findings: typeof val === 'function' ? val(prev.findings) : val }));
+    const setSummary = (val) => setDiagnosisState(prev => ({ ...prev, summary: typeof val === 'function' ? val(prev.summary) : val }));
+    const setIsValidXray = (val) => setDiagnosisState(prev => ({ ...prev, isValidXray: typeof val === 'function' ? val(prev.isValidXray) : val }));
+    const setAiSource = (val) => setDiagnosisState(prev => ({ ...prev, aiSource: typeof val === 'function' ? val(prev.aiSource) : val }));
+
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -26,9 +40,6 @@ export default function DiagnosisPage() {
     const [show3D, setShow3D] = useState(false);
     const [useAI, setUseAI] = useState(true);
     const [history, setHistory] = useState([]);
-    const [aiSource, setAiSource] = useState(null); // 'gemini' | 'mock'
-    const [summary, setSummary] = useState('');
-    const [isValidXray, setIsValidXray] = useState(true);
     const [patientName, setPatientName] = useState('');
     const [configuredModel, setConfiguredModel] = useState('GOOGLE_AI');
     const imgRef = useRef(null);
@@ -44,13 +55,9 @@ export default function DiagnosisPage() {
     }, []);
 
     const handleImage = useCallback((dataUrl) => {
-        setImage(dataUrl);
-        setFindings([]);
+        updateActiveImage(dataUrl);
         setShowReport(false);
-        setAiSource(null);
-        setSummary('');
-        setIsValidXray(true);
-    }, []);
+    }, [updateActiveImage]);
 
     // Analyze based on configured model
     const handleAnalyze = async () => {
@@ -133,8 +140,26 @@ export default function DiagnosisPage() {
         if (!results || configuredModel === 'MOCK_AI') {
             if (configuredModel !== 'MOCK_AI') console.log(`Falling back from ${configuredModel} to Mock AI...`);
             await simulateDelay(1500);
+            let w = imgSize.w;
+            let h = imgSize.h;
+            if (w === 0) {
+                const img = new Image();
+                img.src = image;
+                await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+                w = img.width;
+                h = img.height;
+            }
+            const aspectRatio = w / (h || 1);
+            if (aspectRatio < 1.5) {
+                setAiSource('MOCK_AI');
+                setFindings([]);
+                setSummary('Unsupported image aspect ratio. The uploaded image does not appear to be a panoramic OPG dental radiograph.');
+                setIsValidXray(false);
+                setLoading(false);
+                return;
+            }
             const seed = getImageSeed(image);
-            results = diagnoseConditions(imgSize.w, imgSize.h, seed);
+            results = diagnoseConditions(w, h, seed);
             source = 'MOCK_AI';
             localSummary = configuredModel === 'MOCK_AI' ? 'Simulated response from Mock AI.' : 'Fallback: Simulated response.';
         }
@@ -320,7 +345,7 @@ export default function DiagnosisPage() {
                                     </button>
                                 </>
                             )}
-                            <button className="btn btn-ghost" onClick={() => { setImage(null); setFindings([]); setShowReport(false); setPatientName(''); setSaved(false); }}>
+                            <button className="btn btn-ghost" onClick={() => { updateActiveImage(null); setFindings([]); setShowReport(false); setPatientName(''); setSaved(false); }}>
                                 New Image
                             </button>
                         </div>

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiBook, FiCalendar, FiCreditCard, FiUpload, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiBook, FiCalendar, FiCreditCard, FiUpload, FiArrowRight, FiCheckCircle, FiEye, FiEyeOff } from 'react-icons/fi';
 import { signIn } from 'next-auth/react';
 import styles from './page.module.css';
 
@@ -13,6 +13,8 @@ export default function SignupPage() {
     const [error, setError] = useState('');
     const [idFile, setIdFile] = useState(null);
     const [idPreview, setIdPreview] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -119,11 +121,62 @@ export default function SignupPage() {
                         </div>
                         <div className={styles.inputGroup}>
                             <FiLock className={styles.icon} />
-                            <input type="password" name="password" placeholder="Password" required minLength={8} />
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                placeholder="Password"
+                                required
+                                minLength={8}
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted, #94a3b8)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    zIndex: 10,
+                                }}
+                            >
+                                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                            </button>
                         </div>
                         <div className={styles.inputGroup}>
                             <FiLock className={styles.icon} />
-                            <input type="password" name="confirmPassword" placeholder="Confirm Password" required />
+                            <input
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                name="confirmPassword"
+                                placeholder="Confirm Password"
+                                required
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted, #94a3b8)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    zIndex: 10,
+                                }}
+                            >
+                                {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                            </button>
                         </div>
                     </div>
 

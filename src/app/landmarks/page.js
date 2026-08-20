@@ -7,21 +7,32 @@ import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { detectLandmarks, simulateDelay, getImageSeed } from '@/utils/mockAI';
 import { landmarkCategories } from '@/data/landmarkData';
+import { useDentalState } from '@/context/DentalStateContext';
 import styles from './page.module.css';
 
 export default function LandmarksPage() {
-    const [image, setImage] = useState(null);
-    const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
-    const [results, setResults] = useState([]);
+    const {
+        sharedImage: image,
+        updateActiveImage,
+        imageSize: imgSize,
+        setImageSize: setImgSize,
+        landmarksState,
+        setLandmarksState
+    } = useDentalState();
+
+    const { results, summary, isValidXray, aiSource } = landmarksState;
+
+    const setResults = (val) => setLandmarksState(prev => ({ ...prev, results: typeof val === 'function' ? val(prev.results) : val }));
+    const setSummary = (val) => setLandmarksState(prev => ({ ...prev, summary: typeof val === 'function' ? val(prev.summary) : val }));
+    const setIsValidXray = (val) => setLandmarksState(prev => ({ ...prev, isValidXray: typeof val === 'function' ? val(prev.isValidXray) : val }));
+    const setAiSource = (val) => setLandmarksState(prev => ({ ...prev, aiSource: typeof val === 'function' ? val(prev.aiSource) : val }));
+
     const [loading, setLoading] = useState(false);
     const [selectedLm, setSelectedLm] = useState(null);
     const [hoveredLm, setHoveredLm] = useState(null);
     const [showLabels, setShowLabels] = useState(true);
     const [showOutlines, setShowOutlines] = useState(true);
     const [fillOpacity, setFillOpacity] = useState(0.30);
-    const [aiSource, setAiSource] = useState(null);
-    const [summary, setSummary] = useState('');
-    const [isValidXray, setIsValidXray] = useState(true);
     const [patientName, setPatientName] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -33,18 +44,14 @@ export default function LandmarksPage() {
     const containerRef = useRef(null);
 
     const handleImage = useCallback((dataUrl) => {
-        setImage(dataUrl);
-        setResults([]);
+        updateActiveImage(dataUrl);
         setSelectedLm(null);
         setHoveredLm(null);
-        setAiSource(null);
-        setSummary('');
-        setIsValidXray(true);
         setSaved(false);
         setPatientName('');
         setCurrentIdx(0);
         setViewMode('single');
-    }, []);
+    }, [updateActiveImage]);
 
     const handleSave = async () => {
         if (!results || results.length === 0) return;
@@ -153,8 +160,26 @@ export default function LandmarksPage() {
         // ── 3. Final fallback: mock AI ────────────────────────────────────────
         if (!detected) {
             await simulateDelay(2200);
+            let w = imgSize.w;
+            let h = imgSize.h;
+            if (w === 0) {
+                const img = new Image();
+                img.src = image;
+                await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+                w = img.width;
+                h = img.height;
+            }
+            const aspectRatio = w / (h || 1);
+            if (aspectRatio < 1.5) {
+                setAiSource('mock');
+                setResults([]);
+                setSummary('Unsupported image aspect ratio. The uploaded image does not appear to be a panoramic OPG dental radiograph.');
+                setIsValidXray(false);
+                setLoading(false);
+                return;
+            }
             const seed = getImageSeed(image);
-            detected = detectLandmarks(imgSize.w, imgSize.h, seed);
+            detected = detectLandmarks(w, h, seed);
             source = 'mock';
         }
 
@@ -184,15 +209,30 @@ export default function LandmarksPage() {
         return () => window.removeEventListener('resize', updateDisplaySize);
     }, [image, results]);
 
+    // Ensure currentIdx is valid if results are loaded
+    useEffect(() => {
+        if (results && results.length > 0) {
+            if (currentIdx < 0 || currentIdx >= results.length) {
+                setCurrentIdx(0);
+            }
+        }
+    }, [results, currentIdx]);
+
     // Navigation handlers
     const goNext = () => {
         if (results.length === 0) return;
-        setCurrentIdx((prev) => (prev + 1) % results.length);
+        setCurrentIdx((prev) => {
+            const current = prev >= 0 && prev < results.length ? prev : 0;
+            return (current + 1) % results.length;
+        });
     };
 
     const goPrev = () => {
         if (results.length === 0) return;
-        setCurrentIdx((prev) => (prev - 1 + results.length) % results.length);
+        setCurrentIdx((prev) => {
+            const current = prev >= 0 && prev < results.length ? prev : 0;
+            return (current - 1 + results.length) % results.length;
+        });
     };
 
     const toggleViewMode = () => {
@@ -200,8 +240,9 @@ export default function LandmarksPage() {
     };
 
     // Which landmarks to render
-    const visibleResults = viewMode === 'all' ? results : (results.length > 0 ? [results[currentIdx]] : []);
-    const currentLandmark = results[currentIdx];
+    const validIdx = currentIdx >= 0 && currentIdx < results.length ? currentIdx : 0;
+    const visibleResults = viewMode === 'all' ? results : (results.length > 0 ? [results[validIdx]] : []);
+    const currentLandmark = results.length > 0 ? results[validIdx] : null;
 
     // Compute scale factors
     const getScale = () => {
@@ -287,7 +328,7 @@ export default function LandmarksPage() {
                                         </button>
                                     </>
                                 )}
-                                <button className="btn btn-ghost" onClick={() => { setImage(null); setResults([]); setPatientName(''); setSaved(false); }}>
+                                <button className="btn btn-ghost" onClick={() => { updateActiveImage(null); setResults([]); setPatientName(''); setSaved(false); }}>
                                     New Image
                                 </button>
                             </div>
@@ -423,54 +464,66 @@ export default function LandmarksPage() {
                                                 const isHovered = hoveredLm === lm.id;
                                                 const isHighlighted = isSelected || isHovered;
                                                 const isSingleView = viewMode === 'single';
+                                                const textWidth = Math.min(lm.name.length * 6.2 + 16, 220);
+
+                                                // Dynamic opacity/width for PACS-style clean rendering
+                                                const strokeOpacity = isHighlighted || isSingleView ? 1.0 : 0.35;
+                                                const strokeWidth = isHighlighted || isSingleView ? 2.5 : 1.0;
+                                                const currentFillOpacity = isHighlighted || isSingleView
+                                                    ? Math.min(fillOpacity + 0.15, 0.6)
+                                                    : 0.03; // extremely subtle fill when not focused
 
                                                 return (
                                                     <g key={lm.id}>
-                                                        {/* Fill polygon */}
-                                                        <polygon
-                                                            points={points}
-                                                            fill={hexToRgba(lm.color, isHighlighted ? Math.min(fillOpacity + 0.2, 0.7) : fillOpacity)}
-                                                            stroke={lm.color}
-                                                            strokeWidth={isHighlighted || isSingleView ? 3 : 2}
-                                                            strokeLinejoin="round"
-                                                            className={styles.polygonShape}
-                                                            onMouseEnter={() => setHoveredLm(lm.id)}
-                                                            onMouseLeave={() => setHoveredLm(null)}
-                                                            onClick={() => setSelectedLm(selectedLm === lm.id ? null : lm.id)}
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-
-                                                        {/* Glow effect */}
+                                                        {/* Outer glow stroke */}
                                                         {(isHighlighted || isSingleView) && (
                                                             <polygon
                                                                 points={points}
                                                                 fill="none"
                                                                 stroke={lm.color}
-                                                                strokeWidth={6}
+                                                                strokeWidth={5}
                                                                 strokeLinejoin="round"
-                                                                opacity={0.25}
-                                                                style={{ pointerEvents: 'none' }}
+                                                                opacity={0.45}
+                                                                style={{ transition: 'all 0.2s ease', pointerEvents: 'none' }}
                                                             />
                                                         )}
 
-                                                        {/* Label on polygon */}
-                                                        {showLabels && (
+                                                        {/* Main Fill and Inner stroke */}
+                                                        <polygon
+                                                            points={points}
+                                                            fill={hexToRgba(lm.color, currentFillOpacity)}
+                                                            stroke={lm.color}
+                                                            strokeWidth={strokeWidth}
+                                                            strokeOpacity={strokeOpacity}
+                                                            strokeLinejoin="round"
+                                                            className={styles.polygonShape}
+                                                            onMouseEnter={() => setHoveredLm(lm.id)}
+                                                            onMouseLeave={() => setHoveredLm(null)}
+                                                            onClick={() => setSelectedLm(selectedLm === lm.id ? null : lm.id)}
+                                                            style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                                        />
+
+                                                        {/* Label on polygon - only shown when single view or active/highlighted */}
+                                                        {showLabels && (isHighlighted || isSingleView) && (
                                                             <g style={{ pointerEvents: 'none' }}>
                                                                 <rect
-                                                                    x={lm.centerX * sx - 4}
-                                                                    y={lm.centerY * sy - 12}
-                                                                    width={Math.min(lm.name.length * 6.5 + 16, 220)}
-                                                                    height={20}
+                                                                    x={lm.centerX * sx - (textWidth / 2)}
+                                                                    y={lm.centerY * sy - 9}
+                                                                    width={textWidth}
+                                                                    height={18}
                                                                     rx={4}
-                                                                    fill={hexToRgba(lm.color, 0.92)}
+                                                                    fill="rgba(11, 7, 20, 0.88)"
+                                                                    stroke={lm.color}
+                                                                    strokeWidth={1.5}
                                                                 />
                                                                 <text
-                                                                    x={lm.centerX * sx + 4}
-                                                                    y={lm.centerY * sy + 2}
-                                                                    fill="#fff"
-                                                                    fontSize="11"
+                                                                    x={lm.centerX * sx}
+                                                                    y={lm.centerY * sy + 3}
+                                                                    fill="#ffffff"
+                                                                    fontSize="10"
                                                                     fontWeight="700"
                                                                     fontFamily="Inter, system-ui, sans-serif"
+                                                                    textAnchor="middle"
                                                                 >
                                                                     {lm.name}
                                                                 </text>

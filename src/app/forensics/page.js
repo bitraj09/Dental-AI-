@@ -7,30 +7,36 @@ import SampleImages from '@/components/SampleImages';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import ReportGenerator from '@/components/ReportGenerator';
 import { estimateAge, simulateDelay, getImageSeed } from '@/utils/mockAI';
+import { useDentalState } from '@/context/DentalStateContext';
 import styles from './page.module.css';
 
 export default function ForensicsPage() {
-    const [image, setImage] = useState(null);
-    const [result, setResult] = useState(null);
+    const {
+        sharedImage: image,
+        updateActiveImage,
+        forensicsState,
+        setForensicsState
+    } = useDentalState();
+
+    const { result, summary, isValidXray, aiSource } = forensicsState;
+
+    const setResult = (val) => setForensicsState(prev => ({ ...prev, result: typeof val === 'function' ? val(prev.result) : val }));
+    const setSummary = (val) => setForensicsState(prev => ({ ...prev, summary: typeof val === 'function' ? val(prev.summary) : val }));
+    const setIsValidXray = (val) => setForensicsState(prev => ({ ...prev, isValidXray: typeof val === 'function' ? val(prev.isValidXray) : val }));
+    const setAiSource = (val) => setForensicsState(prev => ({ ...prev, aiSource: typeof val === 'function' ? val(prev.aiSource) : val }));
+
     const [loading, setLoading] = useState(false);
-    const [summary, setSummary] = useState('');
     const [history, setHistory] = useState([]);
-    const [aiSource, setAiSource] = useState(null);
-    const [isValidXray, setIsValidXray] = useState(true);
     const [patientName, setPatientName] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [showReport, setShowReport] = useState(false);
 
     const handleImage = useCallback((dataUrl) => {
-        setImage(dataUrl);
-        setResult(null);
-        setAiSource(null);
-        setSummary('');
-        setIsValidXray(true);
+        updateActiveImage(dataUrl);
         setSaved(false);
         setPatientName('');
-    }, []);
+    }, [updateActiveImage]);
 
     const handleAnalyze = async () => {
         if (!image) return;
@@ -73,10 +79,24 @@ export default function ForensicsPage() {
         // Fallback to mock AI
         if (!estimation) {
             await simulateDelay(3000);
+            const img = new Image();
+            img.src = image;
+            await new Promise((resolve) => {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+            });
+            const aspectRatio = img.width / (img.height || 1);
+            if (aspectRatio < 1.5) {
+                setAiSource('mock');
+                setResult(null);
+                setSummary('Unsupported image aspect ratio. The uploaded image does not appear to be a panoramic OPG dental radiograph.');
+                setIsValidXray(false);
+                setLoading(false);
+                return;
+            }
             const seed = getImageSeed(image);
             estimation = estimateAge(seed);
             source = 'mock';
-            setSummary('');
         }
 
         setAiSource(source);
@@ -197,9 +217,9 @@ export default function ForensicsPage() {
                             <button className="btn btn-primary" onClick={handleAnalyze} disabled={loading}>
                                 <FiActivity size={18} /> Estimate Age
                             </button>
-                            <button className="btn btn-outline" onClick={() => setImage(null)}>
-                                Change Image
-                            </button>
+                             <button className="btn btn-outline" onClick={() => updateActiveImage(null)}>
+                                 Change Image
+                             </button>
                         </div>
                     </motion.div>
                 ) : (
@@ -394,7 +414,7 @@ export default function ForensicsPage() {
                         </motion.div>
 
                         <div className={styles.resultActions}>
-                            <button className="btn btn-primary" onClick={() => { setImage(null); setResult(null); setShowReport(false); setSaved(false); setPatientName(''); }}>
+                            <button className="btn btn-primary" onClick={() => { updateActiveImage(null); setResult(null); setShowReport(false); setSaved(false); setPatientName(''); }}>
                                 New Analysis
                             </button>
                             <button className="btn btn-outline" onClick={() => { setResult(null); setShowReport(false); setSaved(false); }}>

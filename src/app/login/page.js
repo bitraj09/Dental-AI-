@@ -1,19 +1,27 @@
 'use client';
-import { useState, Suspense } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect, Suspense } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiMail, FiLock, FiAlertCircle, FiCheckCircle, FiEye, FiEyeOff } from 'react-icons/fi';
 import { TbDental } from 'react-icons/tb';
 import styles from './page.module.css';
 
 function LoginForm() {
     const router = useRouter();
+    const { status } = useSession();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const msg = searchParams.get('msg');
+
+    useEffect(() => {
+        if (status === 'authenticated') {
+            router.replace('/landmarks');
+        }
+    }, [status, router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -102,12 +110,32 @@ function LoginForm() {
                         <FiLock className={styles.icon} />
                         <input
                             id="password"
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             name="password"
                             placeholder="••••••••"
                             autoComplete="current-password"
                             required
+                            style={{ paddingRight: '40px' }}
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            style={{
+                                position: 'absolute',
+                                right: '12px',
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--text-muted, #94a3b8)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0,
+                                zIndex: 10,
+                            }}
+                        >
+                            {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                        </button>
                     </div>
                 </div>
 

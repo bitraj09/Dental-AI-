@@ -363,6 +363,37 @@
     gap: 16px;
 }
 
+.timeSelector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 14px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.timeOption {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-main);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.timeOption:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.timeOptionActive {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: #a855f7;
+    color: #a855f7;
+}
+
 @media (max-width: 1024px) {
     .quizLayout {
         grid-template-columns: 1fr;

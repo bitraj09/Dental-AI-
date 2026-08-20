@@ -223,7 +223,7 @@ async def detect_landmarks(file: UploadFile = File(...)):
     if landmark_model is None:
         return JSONResponse(
             status_code=503,
-            content={"error": "Landmark model (denatlyolo.pt) not loaded."},
+            content={"error": "Custom AI landmark model not loaded."},
         )
 
     contents = await file.read()
@@ -232,7 +232,7 @@ async def detect_landmarks(file: UploadFile = File(...)):
     img_h, img_w = img.shape[:2]
 
     # Use very low confidence threshold so we don't miss detections
-    # Default YOLO conf=0.25 is often too strict for medical models
+    # Default conf=0.05 is often used for medical models
     results = landmark_model(img, conf=0.05, iou=0.4, verbose=True)
     result = results[0]
 
@@ -241,7 +241,7 @@ async def detect_landmarks(file: UploadFile = File(...)):
         return {
             "landmarks": [],
             "annotated_image": None,
-            "model": "denatlyolo.pt",
+            "model": "custom_ai_landmarks.pt",
             "image_width": img_w,
             "image_height": img_h,
             "isValidXray": False,
@@ -297,7 +297,7 @@ async def detect_landmarks(file: UploadFile = File(...)):
                 "confidence": round(confidence, 4),
                 "color": color,
                 "category": category,
-                "description": f"Segmentation mask detected by denatlyolo.pt",
+                "description": f"Segmentation mask detected by Custom AI model",
                 "significance": f"{display_name(class_name)} — Confidence: {round(confidence * 100, 1)}%",
             })
 
@@ -326,14 +326,14 @@ async def detect_landmarks(file: UploadFile = File(...)):
                 "confidence": round(confidence, 4),
                 "color": color,
                 "category": category,
-                "description": f"Detected by YOLO landmark model (denatlyolo.pt)",
+                "description": f"Detected by Custom AI landmark model",
                 "significance": f"Class: {class_name} | Conf: {round(confidence * 100, 1)}%",
             })
 
     return {
         "landmarks": landmarks,
         "annotated_image": f"data:image/jpeg;base64,{base64_img}",
-        "model": "denatlyolo.pt",
+        "model": "custom_ai_landmarks.pt",
         "image_width": img_w,
         "image_height": img_h,
         "isValidXray": True,

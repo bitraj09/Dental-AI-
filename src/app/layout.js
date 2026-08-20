@@ -4,6 +4,7 @@ import AuthContext from '@/components/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PWARegister from '@/components/PWARegister';
+import { DentalStateProvider } from '@/context/DentalStateContext';
 
 export const metadata = {
   title: 'DentalAI — AI-Powered Dental Radiograph Analysis',
@@ -35,7 +36,7 @@ export default function RootLayout({ children }) {
                   var t = localStorage.getItem('dental-ai-theme') || 'dark';
                   document.documentElement.setAttribute('data-theme', t);
                 } catch(e) {}
-              })();
+               })();
             `,
           }}
         />
@@ -43,12 +44,14 @@ export default function RootLayout({ children }) {
       <body suppressHydrationWarning>
         <AuthContext>
           <ThemeProvider>
-            <Navbar />
-            <main style={{ paddingTop: 'var(--nav-height)' }}>
-              {children}
-            </main>
-            <Footer />
-            <PWARegister />
+            <DentalStateProvider>
+              <Navbar />
+              <main style={{ paddingTop: 'var(--nav-height)' }}>
+                {children}
+              </main>
+              <Footer />
+              <PWARegister />
+            </DentalStateProvider>
           </ThemeProvider>
         </AuthContext>
       </body>

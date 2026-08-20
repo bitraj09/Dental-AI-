@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { FiArrowRight } from 'react-icons/fi';
 import { TbDental } from 'react-icons/tb';
 import { HiOutlineAcademicCap } from 'react-icons/hi2';
@@ -54,7 +55,16 @@ const stats = [
 
 export default function Home() {
   const { status } = useSession();
-  const getStartedHref = status === 'authenticated' ? '/landmarks' : '/login';
+  const router = useRouter();
+
+  const handleGetStarted = (e) => {
+    e.preventDefault();
+    if (status === 'authenticated') {
+      router.push('/landmarks');
+    } else {
+      router.push('/login');
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -103,9 +113,9 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            <Link href={getStartedHref} className="btn btn-primary">
+            <button onClick={handleGetStarted} className="btn btn-primary">
               Get Started <FiArrowRight />
-            </Link>
+            </button>
             <Link href="/education" className="btn btn-outline">
               Try the Quiz
             </Link>

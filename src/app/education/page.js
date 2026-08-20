@@ -34,7 +34,7 @@ export default function EducationPage() {
     const imgRef = useRef(null);
 
     useEffect(() => {
-        fetch('/api/admin/set-model', { cache: 'no-store' })
+        fetch('/api/config/model', { cache: 'no-store' })
             .then((res) => res.json())
             .then((data) => {
                 if (data.activeModel) setConfiguredModel(data.activeModel);
@@ -214,6 +214,7 @@ export default function EducationPage() {
     useEffect(() => {
         if (quizState !== 'playing' || selectedTime === 0) return;
         if (timerRef.current) clearInterval(timerRef.current);
+        setTimeLeft(selectedTime);
         timerRef.current = setInterval(() => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
@@ -228,7 +229,7 @@ export default function EducationPage() {
             });
         }, 1000);
         return () => clearInterval(timerRef.current);
-    }, [quizState, question]);
+    }, [quizState, question, selectedTime]);
     const getScale = () => {
         if (!imgRef.current || imgSize.w === 0) return { sx: 1, sy: 1 };
         const rect = imgRef.current.getBoundingClientRect();
