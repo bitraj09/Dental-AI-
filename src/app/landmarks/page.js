@@ -12,10 +12,11 @@ import styles from './page.module.css';
 
 export default function LandmarksPage() {
     const {
-        sharedImage: image,
-        updateActiveImage,
-        imageSize: imgSize,
-        setImageSize: setImgSize,
+        landmarksImage: image,
+        setLandmarksImage,
+        landmarksImageSize: imgSize,
+        setLandmarksImageSize: setImgSize,
+        resetLandmarksImage,
         landmarksState,
         setLandmarksState
     } = useDentalState();
@@ -44,14 +45,21 @@ export default function LandmarksPage() {
     const containerRef = useRef(null);
 
     const handleImage = useCallback((dataUrl) => {
-        updateActiveImage(dataUrl);
+        setLandmarksImage(dataUrl);
+        setLandmarksState(prev => ({
+            ...prev,
+            results: [],
+            summary: '',
+            isValidXray: true,
+            aiSource: null
+        }));
         setSelectedLm(null);
         setHoveredLm(null);
         setSaved(false);
         setPatientName('');
         setCurrentIdx(0);
         setViewMode('single');
-    }, [updateActiveImage]);
+    }, [setLandmarksImage, setLandmarksState]);
 
     const handleSave = async () => {
         if (!results || results.length === 0) return;
@@ -328,7 +336,7 @@ export default function LandmarksPage() {
                                         </button>
                                     </>
                                 )}
-                                <button className="btn btn-ghost" onClick={() => { updateActiveImage(null); setResults([]); setPatientName(''); setSaved(false); }}>
+                                <button className="btn btn-ghost" onClick={() => { resetLandmarksImage(); setPatientName(''); setSaved(false); }}>
                                     New Image
                                 </button>
                             </div>

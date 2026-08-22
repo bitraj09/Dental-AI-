@@ -15,7 +15,8 @@ export async function GET() {
             'Diagnosis': true,
             'Forensics': true,
             'Compare': true,
-            'Education': true
+            'Education': true,
+            'Learning': true
         };
 
         for (const config of configs) {

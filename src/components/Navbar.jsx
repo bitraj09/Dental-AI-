@@ -11,6 +11,7 @@ import styles from './Navbar.module.css';
 
 const baseLinks = [
     { href: '/', label: 'Home' },
+    { href: '/learning', label: 'Learning' },
     { href: '/landmarks', label: 'Landmarks' },
     { href: '/diagnosis', label: 'Diagnosis' },
     { href: '/compare', label: 'Compare' },

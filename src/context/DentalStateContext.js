@@ -4,9 +4,9 @@ import { createContext, useContext, useState } from 'react';
 const DentalStateContext = createContext();
 
 export function DentalStateProvider({ children }) {
-    const [sharedImage, setSharedImage] = useState(null);
-    const [imageSize, setImageSize] = useState({ w: 800, h: 400 });
-
+    // Landmarks Feature State
+    const [landmarksImage, setLandmarksImage] = useState(null);
+    const [landmarksImageSize, setLandmarksImageSize] = useState({ w: 800, h: 400 });
     const [landmarksState, setLandmarksState] = useState({
         results: [],
         summary: '',
@@ -14,6 +14,9 @@ export function DentalStateProvider({ children }) {
         aiSource: null
     });
 
+    // Diagnosis Feature State
+    const [diagnosisImage, setDiagnosisImage] = useState(null);
+    const [diagnosisImageSize, setDiagnosisImageSize] = useState({ w: 800, h: 400 });
     const [diagnosisState, setDiagnosisState] = useState({
         findings: [],
         summary: '',
@@ -21,6 +24,9 @@ export function DentalStateProvider({ children }) {
         aiSource: null
     });
 
+    // Forensics Feature State
+    const [forensicsImage, setForensicsImage] = useState(null);
+    const [forensicsImageSize, setForensicsImageSize] = useState({ w: 800, h: 400 });
     const [forensicsState, setForensicsState] = useState({
         result: null,
         summary: '',
@@ -28,26 +34,29 @@ export function DentalStateProvider({ children }) {
         aiSource: null
     });
 
-    // Helper to update the active image (resets results for all pages if it changes)
-    const updateActiveImage = (newImage, size = null) => {
-        setSharedImage(newImage);
-        if (size) {
-            setImageSize(size);
-        }
-        
-        // Reset analysis results when a new image is loaded
+    // Helpers to reset state for each feature independently
+    const resetLandmarksImage = () => {
+        setLandmarksImage(null);
         setLandmarksState({
             results: [],
             summary: '',
             isValidXray: true,
             aiSource: null
         });
+    };
+
+    const resetDiagnosisImage = () => {
+        setDiagnosisImage(null);
         setDiagnosisState({
             findings: [],
             summary: '',
             isValidXray: true,
             aiSource: null
         });
+    };
+
+    const resetForensicsImage = () => {
+        setForensicsImage(null);
         setForensicsState({
             result: null,
             summary: '',
@@ -58,18 +67,27 @@ export function DentalStateProvider({ children }) {
 
     return (
         <DentalStateContext.Provider value={{
-            sharedImage,
-            setSharedImage,
-            imageSize,
-            setImageSize,
-            updateActiveImage,
-            
+            landmarksImage,
+            setLandmarksImage,
+            landmarksImageSize,
+            setLandmarksImageSize,
+            resetLandmarksImage,
             landmarksState,
             setLandmarksState,
-            
+
+            diagnosisImage,
+            setDiagnosisImage,
+            diagnosisImageSize,
+            setDiagnosisImageSize,
+            resetDiagnosisImage,
             diagnosisState,
             setDiagnosisState,
-            
+
+            forensicsImage,
+            setForensicsImage,
+            forensicsImageSize,
+            setForensicsImageSize,
+            resetForensicsImage,
             forensicsState,
             setForensicsState
         }}>

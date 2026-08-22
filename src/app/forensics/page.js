@@ -12,8 +12,9 @@ import styles from './page.module.css';
 
 export default function ForensicsPage() {
     const {
-        sharedImage: image,
-        updateActiveImage,
+        forensicsImage: image,
+        setForensicsImage,
+        resetForensicsImage,
         forensicsState,
         setForensicsState
     } = useDentalState();
@@ -33,10 +34,17 @@ export default function ForensicsPage() {
     const [showReport, setShowReport] = useState(false);
 
     const handleImage = useCallback((dataUrl) => {
-        updateActiveImage(dataUrl);
+        setForensicsImage(dataUrl);
+        setForensicsState(prev => ({
+            ...prev,
+            result: null,
+            summary: '',
+            isValidXray: true,
+            aiSource: null
+        }));
         setSaved(false);
         setPatientName('');
-    }, [updateActiveImage]);
+    }, [setForensicsImage, setForensicsState]);
 
     const handleAnalyze = async () => {
         if (!image) return;
@@ -217,7 +225,7 @@ export default function ForensicsPage() {
                             <button className="btn btn-primary" onClick={handleAnalyze} disabled={loading}>
                                 <FiActivity size={18} /> Estimate Age
                             </button>
-                             <button className="btn btn-outline" onClick={() => updateActiveImage(null)}>
+                             <button className="btn btn-outline" onClick={() => resetForensicsImage()}>
                                  Change Image
                              </button>
                         </div>
@@ -414,7 +422,7 @@ export default function ForensicsPage() {
                         </motion.div>
 
                         <div className={styles.resultActions}>
-                            <button className="btn btn-primary" onClick={() => { updateActiveImage(null); setResult(null); setShowReport(false); setSaved(false); setPatientName(''); }}>
+                            <button className="btn btn-primary" onClick={() => { resetForensicsImage(); setShowReport(false); setSaved(false); setPatientName(''); }}>
                                 New Analysis
                             </button>
                             <button className="btn btn-outline" onClick={() => { setResult(null); setShowReport(false); setSaved(false); }}>

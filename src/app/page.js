@@ -59,11 +59,7 @@ export default function Home() {
 
   const handleGetStarted = (e) => {
     e.preventDefault();
-    if (status === 'authenticated') {
-      router.push('/landmarks');
-    } else {
-      router.push('/login');
-    }
+    router.push('/learning');
   };
 
   return (

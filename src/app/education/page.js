@@ -3,6 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheck, FiX, FiRefreshCw, FiAward, FiTarget, FiClock, FiBox, FiZap, FiCpu } from 'react-icons/fi';
 import ImageUploader from '@/components/ImageUploader';
+import SampleImages from '@/components/SampleImages';
 import landmarks from '@/data/landmarkData';
 import { generateQuizQuestion, generateQuizQuestionFromLandmark } from '@/utils/mockAI';
 import styles from './page.module.css';
@@ -272,6 +273,7 @@ export default function EducationPage() {
                         style={{ maxWidth: 640, margin: '0 auto' }}
                     >
                         <ImageUploader onImageSelect={handleImage} label="Upload a Radiograph to Quiz On" />
+                        <SampleImages onSelect={handleImage} />
                     </motion.div>
                 ) : quizState === 'finished' ? (
                     /* Results screen */

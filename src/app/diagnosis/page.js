@@ -16,10 +16,11 @@ const ToothViewer3D = lazy(() => import('@/components/ToothViewer3D'));
 
 export default function DiagnosisPage() {
     const {
-        sharedImage: image,
-        updateActiveImage,
-        imageSize: imgSize,
-        setImageSize: setImgSize,
+        diagnosisImage: image,
+        setDiagnosisImage,
+        diagnosisImageSize: imgSize,
+        setDiagnosisImageSize: setImgSize,
+        resetDiagnosisImage,
         diagnosisState,
         setDiagnosisState
     } = useDentalState();
@@ -55,9 +56,16 @@ export default function DiagnosisPage() {
     }, []);
 
     const handleImage = useCallback((dataUrl) => {
-        updateActiveImage(dataUrl);
+        setDiagnosisImage(dataUrl);
+        setDiagnosisState(prev => ({
+            ...prev,
+            findings: [],
+            summary: '',
+            isValidXray: true,
+            aiSource: null
+        }));
         setShowReport(false);
-    }, [updateActiveImage]);
+    }, [setDiagnosisImage, setDiagnosisState]);
 
     // Analyze based on configured model
     const handleAnalyze = async () => {
@@ -345,7 +353,7 @@ export default function DiagnosisPage() {
                                     </button>
                                 </>
                             )}
-                            <button className="btn btn-ghost" onClick={() => { updateActiveImage(null); setFindings([]); setShowReport(false); setPatientName(''); setSaved(false); }}>
+                            <button className="btn btn-ghost" onClick={() => { resetDiagnosisImage(); setShowReport(false); setPatientName(''); setSaved(false); }}>
                                 New Image
                             </button>
                         </div>
