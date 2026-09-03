@@ -82,6 +82,7 @@ export const config = {
         "/api/gemini-diagnose/:path*",
         "/api/gemini-forensics/:path*",
         "/api/gemini-landmarks/:path*",
+        "/api/ml-forensics/:path*",
         "/education/:path*",
         "/landmark-practice/:path*",
     ],

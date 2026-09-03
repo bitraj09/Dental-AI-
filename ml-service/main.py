@@ -339,6 +339,38 @@ async def detect_landmarks(file: UploadFile = File(...)):
         "isValidXray": True,
     }
 
+
+# ─── Forensics endpoint ───────────────────────────────────────────────────────
+@app.post("/forensics")
+async def analyze_forensics(file: UploadFile = File(...)):
+    try:
+        from forensic_pipeline import run_forensic_pipeline
+        contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if img is None:
+            return JSONResponse(status_code=400, content={"error": "Could not decode uploaded image."})
+
+        # Validate image using landmark model
+        if landmark_model is not None:
+            landmark_results = landmark_model(img, conf=0.05, iou=0.4, verbose=False)
+            if not check_result_is_valid_opg(landmark_results[0]):
+                return {
+                    "isValidXray": False,
+                    "summary": "The uploaded image does not appear to be a valid OPG panoramic radiograph.",
+                    "result": None
+                }
+
+        results = run_forensic_pipeline(img)
+        return results
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+

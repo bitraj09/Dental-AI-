@@ -51,11 +51,11 @@ export default function ForensicsPage() {
         setLoading(true);
 
         let estimation;
-        let source = 'mock';
+        let source = 'ml_pipeline';
 
-        // Try Gemini API
+        // 1. Try Python ML Service Forensic Pipeline (U-Net + Mask R-CNN)
         try {
-            const res = await fetch('/api/gemini-forensics', {
+            const res = await fetch('/api/ml-forensics', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image }),
@@ -63,9 +63,8 @@ export default function ForensicsPage() {
             if (res.ok) {
                 const data = await res.json();
 
-                // If it's not a valid OPG, don't fall back to mock
                 if (data.isValidXray === false) {
-                    setAiSource('gemini');
+                    setAiSource('ml_pipeline');
                     setResult(null);
                     setSummary(data.summary || 'Please upload a valid OPG radiograph.');
                     setIsValidXray(false);
@@ -75,18 +74,50 @@ export default function ForensicsPage() {
 
                 if (data.result && !data.error) {
                     estimation = data.result;
-                    source = 'gemini';
+                    source = 'ml_pipeline';
                     setSummary(data.summary || '');
                     setIsValidXray(true);
                 }
             }
         } catch (err) {
-            console.warn('[Gemini Forensics] Falling back:', err);
+            console.warn('[ML Forensics Pipeline] Falling back to Gemini:', err);
         }
 
-        // Fallback to mock AI
+        // 2. Try Gemini API fallback
         if (!estimation) {
-            await simulateDelay(3000);
+            try {
+                const res = await fetch('/api/gemini-forensics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+
+                    if (data.isValidXray === false) {
+                        setAiSource('gemini');
+                        setResult(null);
+                        setSummary(data.summary || 'Please upload a valid OPG radiograph.');
+                        setIsValidXray(false);
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (data.result && !data.error) {
+                        estimation = data.result;
+                        source = 'gemini';
+                        setSummary(data.summary || '');
+                        setIsValidXray(true);
+                    }
+                }
+            } catch (err) {
+                console.warn('[Gemini Forensics] Falling back to mock AI:', err);
+            }
+        }
+
+        // 3. Fallback to mock AI
+        if (!estimation) {
+            await simulateDelay(2000);
             const img = new Image();
             img.src = image;
             await new Promise((resolve) => {
@@ -127,7 +158,7 @@ export default function ForensicsPage() {
         if (!result) return;
         setSaving(true);
         try {
-            const findings = result.parameters.map(p => ({
+            const findings = (result.parameters || []).map(p => ({
                 name: p.name,
                 description: p.finding,
                 severity: 'info',
@@ -160,10 +191,11 @@ export default function ForensicsPage() {
     };
 
     const agePercent = result ? Math.min(100, (result.estimatedAge / 80) * 100) : 0;
+    const targetTeeth = result?.target_teeth || {};
 
     return (
         <div className={styles.page}>
-            <AnimatePresence>{loading && <LoadingOverlay message="Estimating age from dental parameters…" />}</AnimatePresence>
+            <AnimatePresence>{loading && <LoadingOverlay message="Executing U-Net & Mask R-CNN Forensic Pipeline…" />}</AnimatePresence>
 
             <div className="container">
                 <motion.div
@@ -173,7 +205,7 @@ export default function ForensicsPage() {
                 >
                     <h1 className="section-title">OPG Forensic Odontology</h1>
                     <p className="section-subtitle">
-                        Estimate age from panoramic OPG radiographs using eruption patterns, root closure, pulp narrowing, and cementum deposition.
+                        Estimate age from panoramic OPG radiographs using U-Net Tooth/Pulp segmentation and Mask R-CNN FDI canine identification.
                     </p>
                 </motion.div>
 
@@ -226,7 +258,7 @@ export default function ForensicsPage() {
                                 <FiActivity size={18} /> Estimate Age
                             </button>
                              <button className="btn btn-outline" onClick={() => resetForensicsImage()}>
-                                 Change Image
+                                  Change Image
                              </button>
                         </div>
                     </motion.div>
@@ -241,33 +273,33 @@ export default function ForensicsPage() {
                         {aiSource && (
                             <div style={{ textAlign: 'center', marginBottom: 12 }}>
                                 <span style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                    padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem',
-                                    fontWeight: 600,
-                                    background: aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' : 'rgba(100,116,139,0.15)',
-                                    color: aiSource === 'gemini' ? '#818cf8' : '#94a3b8',
-                                    border: `1px solid ${aiSource === 'gemini' ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                    padding: '6px 14px', borderRadius: 20, fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    background: aiSource === 'ml_pipeline' ? 'rgba(168, 85, 247, 0.15)' : aiSource === 'gemini' ? 'rgba(99,102,241,0.15)' : 'rgba(100,116,139,0.15)',
+                                    color: aiSource === 'ml_pipeline' ? '#a855f7' : aiSource === 'gemini' ? '#818cf8' : '#94a3b8',
+                                    border: `1px solid ${aiSource === 'ml_pipeline' ? 'rgba(168, 85, 247, 0.4)' : aiSource === 'gemini' ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'}`,
                                 }}>
-                                    {aiSource === 'gemini' ? '⚡ Gemini AI' : '🖥 Mock AI'}
+                                    {aiSource === 'ml_pipeline' ? '🔬 Forensic ML Pipeline (U-Net + Mask R-CNN)' : aiSource === 'gemini' ? '⚡ Gemini AI' : '🖥 Mock AI'}
                                 </span>
                             </div>
                         )}
 
-                        {/* Gemini AI Summary */}
-                        {summary && aiSource === 'gemini' && isValidXray && (
+                        {/* Analysis Summary */}
+                        {summary && isValidXray && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 style={{
-                                    marginTop: 16, padding: '12px 16px',
-                                    background: 'rgba(99,102,241,0.08)',
-                                    border: '1px solid rgba(99,102,241,0.2)',
-                                    borderRadius: 10, fontSize: '0.85rem',
+                                    marginTop: 8, padding: '14px 18px',
+                                    background: 'rgba(168, 85, 247, 0.08)',
+                                    border: '1px solid rgba(168, 85, 247, 0.25)',
+                                    borderRadius: 12, fontSize: '0.875rem',
                                     color: 'var(--text-secondary)', lineHeight: 1.5,
-                                    maxWidth: 640, margin: '16px auto 0'
+                                    maxWidth: 900, margin: '8px auto 0'
                                 }}
                             >
-                                <strong style={{ color: '#818cf8' }}>🤖 Gemini Analysis:</strong> {summary}
+                                <strong style={{ color: '#a855f7' }}>📊 Forensic Assessment:</strong> {summary}
                             </motion.div>
                         )}
 
@@ -287,7 +319,7 @@ export default function ForensicsPage() {
                             </motion.div>
                         )}
 
-                        {/* Age card */}
+                        {/* Age Result Card */}
                         <motion.div
                             className={styles.ageCard}
                             initial={{ scale: 0.9, opacity: 0 }}
@@ -331,9 +363,9 @@ export default function ForensicsPage() {
                             </div>
 
                             <div className={styles.ageInfo}>
-                                <h2 className={styles.ageTitle}>Estimated Age</h2>
+                                <h2 className={styles.ageTitle}>Estimated Forensic Age</h2>
                                 <div className={styles.ageRange}>
-                                    <span className={styles.rangeLabel}>Range:</span>
+                                    <span className={styles.rangeLabel}>95% CI Range:</span>
                                     <span className={styles.rangeValue}>{result.minAge} — {result.maxAge} years</span>
                                 </div>
                                 <div className={styles.ageConf}>
@@ -351,6 +383,109 @@ export default function ForensicsPage() {
                             </div>
                         </motion.div>
 
+                        {/* Full OPG Mask Visualization */}
+                        {result.full_visualization && (
+                            <motion.div
+                                className={styles.visSection}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                <h3 className={styles.visTitle}>
+                                    <FiTarget size={20} /> Full OPG Aligned Tooth & Pulp Segmentation
+                                </h3>
+                                <div className={styles.fullVisCard}>
+                                    <div className={styles.fullVisHeader}>
+                                        <span className={styles.fullVisSubtitle}>
+                                            Mask R-CNN FDI Tooth Outlines (Green) & U-Net Pulp Masks (Blue) aligned with Original OPG
+                                        </span>
+                                    </div>
+                                    <div className={styles.visImageWrapper}>
+                                        <img src={result.full_visualization} alt="Aligned OPG Mask Visualization" />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* Target Teeth (FDI 13, 23, 33, 43) Masks & Ratios */}
+                        {Object.keys(targetTeeth).length > 0 && (
+                            <motion.div
+                                className={styles.visSection}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                            >
+                                <h3 className={styles.visTitle}>
+                                    <FiZap size={20} /> Target Canine Segmentation & PA/TA Measurements
+                                </h3>
+
+                                <div className={styles.targetTeethGrid}>
+                                    {["13", "23", "33", "43"].map((fdi) => {
+                                        const item = targetTeeth[fdi];
+                                        if (!item) return null;
+                                        return (
+                                            <div key={fdi} className={styles.toothCard}>
+                                                <div className={styles.toothHeader}>
+                                                    <div className={styles.toothTitle}>
+                                                        <span className={styles.fdiBadge}>FDI {fdi}</span>
+                                                        <span>{item.tooth_name}</span>
+                                                    </div>
+                                                    <span className={styles.pataBadge}>
+                                                        PA/TA: {item.pa_ta_percent}%
+                                                    </span>
+                                                </div>
+
+                                                <div className={styles.maskGrid}>
+                                                    <div className={styles.maskItem}>
+                                                        <div className={styles.maskImgWrap}>
+                                                            <img src={item.crop_original} alt={`FDI ${fdi} Original`} />
+                                                        </div>
+                                                        <span className={styles.maskLabel}>Original OPG</span>
+                                                    </div>
+                                                    <div className={styles.maskItem}>
+                                                        <div className={styles.maskImgWrap}>
+                                                            <img src={item.tooth_mask_img} alt={`FDI ${fdi} Tooth Mask`} />
+                                                        </div>
+                                                        <span className={styles.maskLabel}>Tooth Mask (FDI)</span>
+                                                    </div>
+                                                    <div className={styles.maskItem}>
+                                                        <div className={styles.maskImgWrap}>
+                                                            <img src={item.pulp_mask_img} alt={`FDI ${fdi} Pulp Mask`} />
+                                                        </div>
+                                                        <span className={styles.maskLabel}>Pulp Mask (U-Net)</span>
+                                                    </div>
+                                                    <div className={styles.maskItem}>
+                                                        <div className={styles.maskImgWrap}>
+                                                            <img src={item.combined_img} alt={`FDI ${fdi} Combined`} />
+                                                        </div>
+                                                        <span className={styles.maskLabel}>Tooth + Pulp Overlay</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.metricsRow}>
+                                                    <div className={styles.metricBox}>
+                                                        <span className={styles.metricLabel}>Tooth Area (TA)</span>
+                                                        <span className={styles.metricValue}>{item.tooth_pixels.toLocaleString()} px</span>
+                                                    </div>
+                                                    <div className={styles.metricBox}>
+                                                        <span className={styles.metricLabel}>Pulp Area (PA)</span>
+                                                        <span className={styles.metricValue}>{item.pulp_pixels.toLocaleString()} px</span>
+                                                    </div>
+                                                    <div className={styles.metricBox}>
+                                                        <span className={styles.metricLabel}>PA / TA Ratio</span>
+                                                        <span className={styles.metricValue}>{item.pa_ta_ratio}</span>
+                                                    </div>
+                                                    <div className={styles.metricBox}>
+                                                        <span className={styles.metricLabel}>Detection Score</span>
+                                                        <span className={styles.metricValue}>{Math.round(item.confidence * 100)}%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+                        )}
+
                         {/* Parameter breakdown */}
                         <motion.div
                             className={styles.paramSection}
@@ -359,11 +494,11 @@ export default function ForensicsPage() {
                             transition={{ delay: 0.4 }}
                         >
                             <h3 className={styles.paramTitle}>
-                                <FiBarChart2 size={18} /> Parameter Breakdown
+                                <FiBarChart2 size={18} /> Forensic Parameter Breakdown
                             </h3>
 
                             <div className={styles.paramGrid}>
-                                {result.parameters.map((param, idx) => (
+                                {(result.parameters || []).map((param, idx) => (
                                     <motion.div
                                         key={param.id}
                                         className={styles.paramCard}
@@ -452,3 +587,4 @@ export default function ForensicsPage() {
         </div>
     );
 }
+
