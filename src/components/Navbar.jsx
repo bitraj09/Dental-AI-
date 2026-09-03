@@ -2,9 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTheme } from './ThemeProvider';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSun, FiMoon, FiMenu, FiX, FiLogOut, FiUser, FiShield } from 'react-icons/fi';
+import { FiMenu, FiX, FiLogOut, FiUser, FiShield } from 'react-icons/fi';
 import { TbDental } from 'react-icons/tb';
 import { useSession, signOut } from 'next-auth/react';
 import styles from './Navbar.module.css';
@@ -25,7 +24,6 @@ const baseLinks = [
 
 export default function Navbar() {
     const { data: session } = useSession();
-    const { theme, toggleTheme } = useTheme();
     const pathname = usePathname();
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -140,26 +138,6 @@ export default function Navbar() {
                 </div>
 
                 <div className={styles.actions}>
-                    <motion.button
-                        className={styles.themeBtn}
-                        onClick={toggleTheme}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        aria-label="Toggle theme"
-                    >
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={theme}
-                                initial={{ rotate: -90, opacity: 0 }}
-                                animate={{ rotate: 0, opacity: 1 }}
-                                exit={{ rotate: 90, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-                            </motion.div>
-                        </AnimatePresence>
-                    </motion.button>
-
                     {mounted && (
                         session ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>

@@ -1,8 +1,10 @@
 'use client';
-import { useRef, useState, useMemo, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { useRef, useState, useMemo, useCallback, Suspense } from 'react';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { OrbitControls, Html, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import styles from './ToothViewer3D.module.css';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -360,9 +362,131 @@ function GumTissue() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   PATIENT MODEL LOADER & NORMALIZATION
+   ═══════════════════════════════════════════════════════════════ */
+function ModelLoader() {
+    const { progress } = useProgress();
+    return (
+        <Html center style={{ pointerEvents: 'none' }}>
+            <div className={styles.loaderContainer}>
+                <div className={styles.loaderSpinner}></div>
+                <p className={styles.loaderText}>Loading Scan... {Math.round(progress)}%</p>
+                <div className={styles.progressBarOuter}>
+                    <div className={styles.progressBarInner} style={{ width: `${progress}%` }}></div>
+                </div>
+            </div>
+        </Html>
+    );
+}
+
+function PatientModel({ url, type, materialPreset }) {
+    const obj = type === 'obj' ? useLoader(OBJLoader, url) : null;
+    const geom = type === 'stl' ? useLoader(STLLoader, url) : null;
+
+    const material = useMemo(() => {
+        const props = {
+            roughness: 0.25,
+            metalness: 0.15,
+            clearcoat: 0.5,
+            clearcoatRoughness: 0.15,
+        };
+
+        switch (materialPreset) {
+            case 'enamel':
+                return new THREE.MeshPhysicalMaterial({
+                    ...props,
+                    color: '#f5f0e8',
+                    roughness: 0.15,
+                    metalness: 0.05,
+                    clearcoat: 0.9,
+                    clearcoatRoughness: 0.1,
+                });
+            case 'bone':
+                return new THREE.MeshPhysicalMaterial({
+                    ...props,
+                    color: '#ddd0b0',
+                    transparent: true,
+                    opacity: 0.65,
+                    roughness: 0.4,
+                    metalness: 0.0,
+                });
+            case 'gold':
+                return new THREE.MeshPhysicalMaterial({
+                    color: '#ffd700',
+                    roughness: 0.1,
+                    metalness: 0.9,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.1,
+                });
+            case 'diagnostic':
+                return new THREE.MeshPhysicalMaterial({
+                    ...props,
+                    color: '#3b82f6',
+                    roughness: 0.2,
+                    metalness: 0.2,
+                    emissive: '#1d4ed8',
+                    emissiveIntensity: 0.15,
+                });
+            default:
+                return new THREE.MeshPhysicalMaterial({
+                    ...props,
+                    color: '#f5f0e8',
+                });
+        }
+    }, [materialPreset]);
+
+    const normalizedObject = useMemo(() => {
+        if (type === 'obj' && obj) {
+            const cloned = obj.clone();
+            const box = new THREE.Box3().setFromObject(cloned);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            cloned.position.sub(center);
+
+            // Scale to a standard bounding box size of 4.5 units
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 4.5 / (maxDim || 1);
+            cloned.scale.set(scale, scale, scale);
+
+            cloned.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    child.material = material;
+                }
+            });
+            return <primitive object={cloned} />;
+        }
+
+        if (type === 'stl' && geom) {
+            const clonedGeom = geom.clone();
+            clonedGeom.center();
+            clonedGeom.computeVertexNormals();
+
+            clonedGeom.computeBoundingBox();
+            const box = clonedGeom.boundingBox;
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 4.5 / (maxDim || 1);
+
+            return (
+                <mesh geometry={clonedGeom} scale={[scale, scale, scale]} castShadow receiveShadow material={material} />
+            );
+        }
+
+        return null;
+    }, [obj, geom, type, material]);
+
+    return normalizedObject;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    FULL DENTAL SCENE
    ═══════════════════════════════════════════════════════════════ */
-function DentalScene({ findings }) {
+function DentalScene({ mode, modelUrl, modelType, materialPreset, findings }) {
     const [hoveredId, setHoveredId] = useState(null);
 
     const toothFindings = useMemo(() => {
@@ -399,28 +523,36 @@ function DentalScene({ findings }) {
             <pointLight position={[0, 1, 7]} intensity={0.5} color="#fff5ee" distance={15} />
             <pointLight position={[0, -1, 5]} intensity={0.3} color="#ffe8d8" distance={12} />
 
-            {/* Gum tissue */}
-            <GumTissue />
+            {mode === 'fdi' ? (
+                <>
+                    {/* Gum tissue */}
+                    <GumTissue />
 
-            {/* All 32 teeth */}
-            {TOOTH_DATA.map((tooth) => (
-                <Tooth
-                    key={tooth.id}
-                    position={[tooth.x, tooth.y, tooth.z]}
-                    toothData={tooth}
-                    finding={toothFindings[tooth.id] || null}
-                    isHovered={hoveredId === tooth.id}
-                    onHover={() => handleHover(tooth.id)}
-                    onUnhover={handleUnhover}
-                />
-            ))}
+                    {/* All 32 teeth */}
+                    {TOOTH_DATA.map((tooth) => (
+                        <Tooth
+                            key={tooth.id}
+                            position={[tooth.x, tooth.y, tooth.z]}
+                            toothData={tooth}
+                            finding={toothFindings[tooth.id] || null}
+                            isHovered={hoveredId === tooth.id}
+                            onHover={() => handleHover(tooth.id)}
+                            onUnhover={handleUnhover}
+                        />
+                    ))}
+                </>
+            ) : (
+                <Suspense fallback={<ModelLoader />}>
+                    {modelUrl && <PatientModel url={modelUrl} type={modelType} materialPreset={materialPreset} />}
+                </Suspense>
+            )}
 
             {/* Controls */}
             <OrbitControls
                 enablePan
                 enableZoom
                 enableRotate
-                autoRotate
+                autoRotate={mode === 'fdi'}
                 autoRotateSpeed={0.6}
                 maxDistance={14}
                 minDistance={3}
@@ -435,38 +567,106 @@ function DentalScene({ findings }) {
    EXPORTED COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 export default function ToothViewer3D({ findings }) {
+    const [mode, setMode] = useState('subtool2'); // 'fdi', 'teeth1', 'teeth2', 'subtool1', 'subtool2'
+    const [materialPreset, setMaterialPreset] = useState('enamel');
+
+    const selectedModel = useMemo(() => {
+        switch (mode) {
+            case 'teeth1':
+                return { type: 'obj', url: '/models/teeth1.OBJ' };
+            case 'teeth2':
+                return { type: 'obj', url: '/models/teeth2.OBJ' };
+            case 'subtool1':
+                return { type: 'stl', url: '/models/teeth_1_SubTool1.stl' };
+            case 'subtool2':
+                return { type: 'stl', url: '/models/teeth_1_SubTool2.stl' };
+            default:
+                return null;
+        }
+    }, [mode]);
+
     return (
         <div className={styles.container}>
-            <div className={styles.canvasWrap}>
-                <Canvas
-                    camera={{ position: [0, 2.5, 7.5], fov: 38 }}
-                    shadows
-                    dpr={[1, 2]}
-                    style={{ background: 'transparent' }}
-                    gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
-                >
-                    <DentalScene findings={findings} />
-                </Canvas>
+            <div className={styles.viewerHeader}>
+                <div className={styles.controlsOverlay}>
+                    <div className={styles.controlGroup}>
+                        <select
+                            className={styles.selectInput}
+                            value={mode}
+                            onChange={(e) => setMode(e.target.value)}
+                            title="Select 3D View Mode"
+                        >
+                            <option value="fdi">🦷 FDI Interactive Arch</option>
+                            <option value="teeth1">📁 Patient Scan 1 (OBJ)</option>
+                            <option value="teeth2">📁 Patient Scan 2 (OBJ)</option>
+                            <option value="subtool1">📁 Patient SubTool 1 (STL)</option>
+                            <option value="subtool2">📁 Patient SubTool 2 (STL)</option>
+                        </select>
+                    </div>
+
+                    {mode !== 'fdi' && (
+                        <div className={styles.controlGroup}>
+                            <select
+                                className={styles.selectInput}
+                                value={materialPreset}
+                                onChange={(e) => setMaterialPreset(e.target.value)}
+                                title="Select Material Preset"
+                            >
+                                <option value="enamel">Realistic Enamel</option>
+                                <option value="bone">Translucent Bone</option>
+                                <option value="gold">Metallic Gold</option>
+                                <option value="diagnostic">Diagnostic Blue</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
+
+                <div className={styles.canvasWrap}>
+                    <Canvas
+                        camera={{ position: [0, 2.5, 7.5], fov: 38 }}
+                        shadows
+                        dpr={[1, 2]}
+                        style={{ background: 'transparent' }}
+                        gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
+                    >
+                        <DentalScene
+                            mode={mode}
+                            modelUrl={selectedModel?.url}
+                            modelType={selectedModel?.type}
+                            materialPreset={materialPreset}
+                            findings={findings}
+                        />
+                    </Canvas>
+                </div>
             </div>
             {/* Legend */}
-            <div className={styles.legend}>
-                <div className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{ background: severityColor.healthy }} />
-                    Healthy
+            {mode === 'fdi' ? (
+                <div className={styles.legend}>
+                    <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: severityColor.healthy }} />
+                        Healthy
+                    </div>
+                    <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: severityColor.mild }} />
+                        Mild
+                    </div>
+                    <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: severityColor.moderate }} />
+                        Moderate
+                    </div>
+                    <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: severityColor.severe }} />
+                        Severe
+                    </div>
                 </div>
-                <div className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{ background: severityColor.mild }} />
-                    Mild
+            ) : (
+                <div className={styles.legend}>
+                    <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: '#a855f7' }} />
+                        Active Patient Scan Mode ({selectedModel?.type.toUpperCase()})
+                    </div>
                 </div>
-                <div className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{ background: severityColor.moderate }} />
-                    Moderate
-                </div>
-                <div className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{ background: severityColor.severe }} />
-                    Severe
-                </div>
-            </div>
+            )}
             <p className={styles.hint}>🖱️ Drag to rotate • Scroll to zoom • Right-click to pan</p>
         </div>
     );

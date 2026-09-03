@@ -4,6 +4,7 @@ import AuthContext from '@/components/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PWARegister from '@/components/PWARegister';
+import ThemeToggleFAB from '@/components/ThemeToggleFAB';
 import { DentalStateProvider } from '@/context/DentalStateContext';
 
 export const metadata = {
@@ -51,6 +52,7 @@ export default function RootLayout({ children }) {
               </main>
               <Footer />
               <PWARegister />
+              <ThemeToggleFAB />
             </DentalStateProvider>
           </ThemeProvider>
         </AuthContext>
