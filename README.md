@@ -1,6 +1,6 @@
 # 🦷 DentalAI — Multi-Modal AI System for Radiographic Diagnosis & Forensic Odontology
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](#license)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-000000?style=flat&logo=nextdotjs)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![PyTorch](https://img.shields.io/badge/AI%20Framework-PyTorch-EE4C2C?style=flat&logo=pytorch)](https://pytorch.org/)
@@ -257,8 +257,19 @@ dental/
 
 ---
 
-## 📜 License & Acknowledgments
+## License
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Copyright © 2026 Raj Chavan. All Rights Reserved.
+
+This repository is publicly available solely for evaluation and review purposes, including Razorpay Buildathon judging.
+
+The source code, models, documentation, and other original materials may not be copied, modified, distributed, sublicensed, sold, or used in commercial products or services without prior written permission from the copyright holder.
+
+Viewing and evaluating this repository for educational, judging, or review purposes is permitted.
+
+**No license is granted for reuse, redistribution, modification, or commercial exploitation of this project.**
+
+---
 
 > Designed & Developed with ❤️ for **Buildathon Showcase**.
+
