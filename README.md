@@ -1,168 +1,264 @@
-# 🦷 DentalAI — AI-Powered Dental Radiograph Analysis System
+# 🦷 DentalAI — Multi-Modal AI System for Radiographic Diagnosis & Forensic Odontology
 
-DentalAI is an advanced, AI-powered dental imaging and diagnostics assistant designed to support dental professionals, forensic practitioners, and students. By analyzing panoramic radiographs, the system automates anatomical structure identification, flags pathological conditions, estimates patient age using forensic parameters, and offers interactive student training tools.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-000000?style=flat&logo=nextdotjs)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![PyTorch](https://img.shields.io/badge/AI%20Framework-PyTorch-EE4C2C?style=flat&logo=pytorch)](https://pytorch.org/)
+[![Docker](https://img.shields.io/badge/Deployment-Docker%20Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
+[![Hackathon Ready](https://img.shields.io/badge/Buildathon-Showcase%20Ready-FFD700?style=flat&logo=trophy)]()
+
+**DentalAI** is an end-to-end, enterprise-grade AI ecosystem for panoramic dental radiograph analysis, diagnostic pathology identification, student anatomical training, and forensic age estimation. Built specifically for clinical practitioners, forensic odontologists, and dental academics.
 
 ---
 
-## Docker Deployment
+## 🏆 Key Buildathon Highlights
 
-1. Create deployment environment file.
+> [!IMPORTANT]
+> ### 🧠 100% Custom-Built AI & Computer Vision Models
+> Unlike conventional wrappers around generic API endpoints, **all AI models in DentalAI are fully custom-trained and domain-optimized** for panoramic dental radiographs (OPG):
+> 1. **Custom YOLO Pathology Diagnostic Network** (`best.pt`)
+> 2. **Custom 31-Class Anatomical Landmark Segmentation YOLO** (`best_landmarks.pt`)
+> 3. **Custom Restrictive-Hierarchical Semantic Segmentation U-Net** (`toothpulpmask.pt`)
+> 4. **Custom Mask R-CNN FDI Tooth Instance Segmentor** (`maskrcnn_best.pth`)
+> 5. **Custom Computer Vision Forensic Age Estimation Engine** (Pulp-to-Tooth Morphometric Pipeline)
 
-```bash
-cp .env.docker.example .env
+---
+
+## 📐 System Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client ["Client Layer (Web Application)"]
+        UI["Next.js 14 Responsive UI"]
+        Canvas["HTML5 Canvas / WebGL 3D Engine"]
+    end
+
+    subgraph API ["API & Auth Gateway"]
+        NextAPI["Next.js API Routes / Middleware"]
+        Auth["NextAuth.js + Role-Based Access Control"]
+        Prisma["Prisma ORM"]
+    end
+
+    subgraph Storage ["Persistence"]
+        DB[(MySQL 8.0 Database)]
+    end
+
+    subgraph AI ["Microservice Layer (Python FastAPI)"]
+        FastAPI["FastAPI Orchestrator"]
+        
+        subgraph Models ["🧠 Custom-Trained AI Suite"]
+            YOLO_Diag["YOLO Pathology Detector"]
+            YOLO_Landmark["YOLO 31-Class Landmark Model"]
+            UNet["Hierarchical Semantic U-Net"]
+            MaskRCNN["Mask R-CNN FDI Segmentor"]
+            ForensicEngine["Morphometric Age Calculator"]
+        end
+    end
+
+    UI --> NextAPI
+    Canvas --> UI
+    NextAPI --> Auth
+    NextAPI --> Prisma
+    Prisma --> DB
+    NextAPI -- HTTP API (Port 8001) --> FastAPI
+    FastAPI --> YOLO_Diag
+    FastAPI --> YOLO_Landmark
+    FastAPI --> UNet
+    FastAPI --> MaskRCNN
+    FastAPI --> ForensicEngine
 ```
 
-2. Edit `.env` and set secure values for:
-- `MYSQL_ROOT_PASSWORD`
-- `MYSQL_PASSWORD`
-- `NEXTAUTH_SECRET`
-- `ML_API_KEY`
+---
 
-3. Build and start services.
+## 🧠 Deep Dive: Custom AI Models & Pipelines
 
-```bash
-docker compose up -d --build
+### 1. 🩺 Custom YOLO Pathology Diagnostic Model (`best.pt`)
+* **Task**: Object detection and pathology localized bounding box regression.
+* **Capabilities**: Flags pathological anomalies such as dental caries (cavities), periapical lesions, bone loss, impacted teeth, and dental restorations.
+* **Severity Engine**: Color-coded severity scoring (Severe: Red, Moderate: Orange, Mild: Green) with confidence threshold filtering.
+
+### 2. 📍 Custom 31-Class Anatomical Landmark Model (`best_landmarks.pt`)
+* **Task**: Polygon segmentation and landmark detection across 31 anatomical structures.
+* **Coverage**:
+  * **Mandible**: Sigmoid notch, Coronoid process, Ramus, Mandibular canal, Gonial angle, Mental foramen, Lingula, etc.
+  * **TMJ**: Condylar head, Glenoid fossa, Articular eminence.
+  * **Maxilla**: Maxillary sinus walls/floor, Zygomatic arch, Hard palate, Incisive foramen.
+  * **Midline & Other**: Nasal septum, Inferior concha, Hyoid bone.
+* **Interactivity**: Dynamic polygon overlay with real-time opacity controls ($0\% - 100\%$) and One-by-One clinical focus mode.
+
+### 3. 🔬 Custom Restrictive-Hierarchical Semantic U-Net (`toothpulpmask.pt`)
+* **Task**: Dual-target semantic segmentation of tooth structures and pulp chambers.
+* **Architecture**: Restrictive-Hierarchical U-Net trained to segment fine inner tooth geometries for precise pulp area ($A_p$) extraction.
+
+### 4. 🦷 Custom Mask R-CNN FDI Tooth Segmentor (`maskrcnn_best.pth`)
+* **Task**: Instance segmentation and FDI (Federation Dentaire Internationale) anatomical numbering (11–48).
+* **Capabilities**: Identifies individual teeth, extracts binary masks, isolates target teeth (e.g., Canines 13, 23, 33, 43), and measures root closure apexes.
+
+### 5. 🦴 Custom Computer Vision Forensic Age Estimation Engine
+* **Algorithm**: Implements non-invasive Cameriere & Morphometric analysis.
+* **Pipeline**:
+  1. Segments total tooth area ($A_t$) and pulp chamber area ($A_p$).
+  2. Calculates the pulp-to-tooth ratio ($s = A_p / A_t$) and root apex distance ($N_0, A_r$).
+  3. Executes mathematical regression equations to compute estimated chronological age, confidence range, and metric weight contributions.
+
+---
+
+## ✨ Core Features & Platform Modules
+
+### 📍 1. Panoramic Radiograph Landmark Detection
+* **Validation Gateway**: Automatically scans uploaded images to verify they are valid panoramic X-rays before processing.
+* **Multi-Group Classification**: Categorizes detected landmarks into Mandible, TMJ, Maxilla, Midline, and Other.
+* **Interactive Tooltips**: Hovering displays clinical definitions, diagnostic significance, and region groupings.
+
+### 🎓 2. Student Education & Diagnostic Quizzing
+* **Dynamic Quiz Engine**: Generates 10-question multiple-choice tests using real AI landmark detections.
+* **Visual Prompts & Timers**: Highlights target structures with crosshairs and dynamic countdown timers (15s–60s or unlimited).
+* **Clinical Feedback**: Gives immediate explanations, scoring metrics, and radial progress tracking.
+
+### 🎨 3. Interactive Landmark Drawing Practice
+* **Student Canvas**: Polygon drawing tool allowing students to plot anatomical vertices manually.
+* **Real-Time AI Grading**: Evaluates student accuracy against AI ground truth by computing:
+  * **Centroid Distance**: Positional alignment metric.
+  * **Bounding Box Overlap (IoU)**: Shape and coverage accuracy.
+  * **Symmetry Check**: Automatically detects contralateral bilateral drawings for fair scoring.
+
+### 🩺 4. Diagnostic Pathology Mapping & FDI Charting
+* **Quadrant Summaries**: Organizes detected pathologies by FDI dental arch quadrants.
+* **Digital FDI Arch**: Interactive 32-tooth chart showing status (**Healthy**, **Pathology**, **Restored**, **Missing**).
+* **3D Dentition Viewer**: WebGL/Canvas procedural 3D model of upper and lower arches mapping live patient pathologies in 3D.
+
+### 🦴 5. Forensic Odontology Module
+* **Visual Age Dial**: Displays estimated age on an interactive gauge with minimum-maximum error boundaries.
+* **Morphometric Breakdown**: Shows exact metric weight contributions (eruption patterns, apex closure, pulp ratio).
+
+### 📊 6. Longitudinal Comparison & Medical Report Generator
+* **Side-by-Side Panel**: Compares pre- and post-treatment radiographs to highlight clinical changes.
+* **Zero-Dependency Reports**: Renders printable medical reports with severity distribution pie charts and PDF/HTML export.
+
+---
+
+## 🔒 Role-Based Access & Security Workflow
+
+The application includes a verification pipeline to restrict sensitive diagnostic access:
+
+```
+[ New Registration ] ──> Upload College ID ──> [ Pending State ]
+                                                      │
+                                                      ▼
+                                       Admin Review Dashboard
+                                            /           \
+                                 [ Approved ]          [ Rejected ]
+                                      │                      │
+                          Access Granted to Role    Notification & Re-apply
 ```
 
-4. Verify service status.
+* **Student**: Access to learning modules, quizzes, drawing practice, and basic diagnosis.
+* **Moderator Admin**: Access to user credential verification dashboard and AI model toggles.
+* **Platform Super Admin**: Full platform control, feature flags, domain blocklists, and direct provisioning.
 
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend Framework** | Next.js 14 (App Router, React 18) |
+| **Styling** | Vanilla CSS Modules, CSS Tokens, Responsive UI |
+| **ML Service Framework** | Python 3.11, FastAPI, Uvicorn |
+| **Computer Vision / AI** | PyTorch, Ultralytics YOLO, OpenCV, torchvision |
+| **Database & ORM** | MySQL 8.0, Prisma ORM |
+| **Authentication** | NextAuth.js (JWT, Password Hashing) |
+| **Containerization** | Docker, Docker Compose |
+
+---
+
+## 🚀 Quick Start & Deployment
+
+### Prerequisites
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
+
+### Option A: One-Command Docker Setup (Recommended)
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/dental-ai.git
+   cd dental-ai
+   ```
+
+2. **Configure Environment Variables**:
+   ```bash
+   cp .env.docker.example .env
+   ```
+
+3. **Launch Container Suite**:
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. **Access Application**:
+   Open browser at `http://localhost:3000`
+
+---
+
+### Option B: Local Manual Setup (Development Mode)
+
+#### 1. Setup Database
+Start MySQL 8.0 locally or via Docker and ensure standard credentials are configured in `.env`.
+
+#### 2. Start Python ML Microservice
 ```bash
-docker compose ps
-docker compose logs -f web
+cd ml-service
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-5. Open the app at `http://localhost:3000`.
-
-Notes:
-- The `web` container waits for healthy `mysql` and `ml-service` containers.
-- DB migrations run on startup when `RUN_DB_MIGRATIONS=true`.
-- Readiness is exposed at `/api/health`.
-
----
-
-## 🔒 User Verification & Role Workflows
-
-The platform secures patient data and system access through a structured user approval workflow and role-based permissions:
-
-*   **Verification Workflow**: During sign-up, new users upload their college ID card and enter their academic details. Registered accounts default to a pending status, during which access to diagnostic features is restricted.
-*   **Approval & Rejection**: System administrators review the uploaded credentials. If the ID is verified, access is approved. If rejected (e.g., due to an blurry image), the user is notified of the rejection reason and can submit a re-application.
-*   **User Access Roles**:
-    *   **Student User**: Granted access to core diagnosis, landmark detection, comparative panels, and educational quiz/drawing tools.
-    *   **Moderator Admin**: Inherits student privileges and gains access to the verification dashboard to approve/reject signups, inspect credentials, and manage active AI model configurations.
-    *   **Platform Super Admin**: Possesses master control to toggle specific system modules on or off, configure blocked college keywords to screen signups, manually provision credentials, and manage accounts.
+#### 3. Start Next.js Frontend
+```bash
+# In project root
+npm install
+npx prisma db push
+npm run dev
+```
 
 ---
 
-## 🚀 Core Features & Modules
+## 📁 Repository Structure
 
-### 1. Panoramic Landmark Detection
-Automatically identifies and annotates anatomical structures on dental radiographs:
-*   **Anatomical Classification**: Automatically detects and groups features into key regions: **Mandible**, **TMJ**, **Maxilla**, **Midline**, and **Other**.
-*   **Interactive Visual Overlays**: Toggle polygon outlines and name tags directly over the radiograph.
-*   **Custom Opacity Controls**: Adjust overlay transparency dynamically (from 0 to 100%) to trace underlying structures.
-*   **Focused Navigation**: Toggle between **One by One** focus (highlighting a single structure with its clinical description and significance) and **Show All** mode.
-*   **Radiograph Validation**: Automatically scans and validates if the uploaded file is a valid panoramic radiograph before initiating analysis.
-
----
-
-### 2. Student Education & Quizzing
-An interactive diagnostic training module:
-*   **Dynamic Quiz Generation**: Randomly compiles 10-question multiple-choice quizzes based on AI landmark detections.
-*   **Visual Prompts**: Places a visual crosshair marker on the target structure alongside its highlighted polygon boundary on the radiograph.
-*   **Timer Modes**: Support for customizable countdown timers (15s, 30s, 45s, 60s, or unlimited). The timer changes color as it runs down to indicate urgency.
-*   **Instant Clinical Feedback**: Shows correct answers and provides clinical definitions for correct responses, or highlights incorrect selections and outlines the expected structure.
-*   **Radial Progress Charting**: Displays final test scores in a visual progress circle with history logs.
-
----
-
-### 3. Landmark Drawing Practice
-A training interface for manual anatomical mapping:
-*   **Interactive Drawing Canvas**: Students sketch polygon outlines of requested anatomical landmarks by placing vertices directly on the radiograph.
-*   **Drawing Controls**: Supports vertex undo operations, canvas clearing, and automatic polygon closing.
-*   **Reference Guidance**: Toggles a dashed boundary showing the expected anatomical outline and centroid to guide the student.
-*   **Real-Time Grading Engine**: Analyzes drawings against ground truth by calculating:
-    *   **Centroid Distance**: Measure of positional alignment.
-    *   **Bounding Box Overlap**: Score of overall shape and coverage accuracy.
-    *   **Symmetry Alignment**: Automatically detects if a bilateral structure was drawn on the contralateral side and adjusts coordinates for fair scoring.
-*   **Performance Metrics**: Returns an accuracy score, descriptive feedback, and highlighted corrections.
+```
+dental/
+├── Dockerfile                   # Production Web Dockerfile
+├── docker-compose.yml           # Multi-container orchestration
+├── .env.docker.example          # Environment template
+├── ml-service/                  # Python FastAPI AI Microservice
+│   ├── Dockerfile               # ML Service Dockerfile
+│   ├── main.py                  # FastAPI routes (YOLO Diagnosis & Landmarks)
+│   ├── forensic_pipeline.py     # U-Net & Mask R-CNN Forensic Engine
+│   └── models/                  # Custom AI Model Weights (.pt / .pth)
+│       ├── best.pt              # Custom YOLO Pathology Model
+│       ├── best_landmarks.pt    # Custom YOLO 31-Landmark Model
+│       ├── toothpulpmask.pt     # Custom Hierarchical U-Net
+│       └── maskrcnn_best.pth    # Custom Mask R-CNN FDI Model
+├── src/                         # Next.js Application Source
+│   ├── app/                     # App Router Pages & API Routes
+│   │   ├── forensics/           # Forensic Odontology Module
+│   │   ├── landmark-practice/   # Student Canvas Practice
+│   │   ├── admin/               # Role-based Admin Panels
+│   │   └── api/                 # Backend proxy & Auth APIs
+│   ├── components/              # Modular UI Components (3D viewer, Tooth chart)
+│   └── lib/                     # Auth guard, DB clients & utilities
+└── prisma/                      # Database Schema & Migrations
+```
 
 ---
 
-### 4. Patient Diagnosis
-Pathology detection and abnormality mapping:
-*   **Condition Detection**: Flags pathological anomalies (such as cavities, impacted teeth, bone loss, periapical lesions, and restorations).
-*   **Severity Highlighting**: Color-codes bounding boxes based on condition severity (Severe in Red, Moderate in Orange, Mild in Green).
-*   **Hover Tooltips**: Displays condition names, severity levels, and confidence ratings when hovering over a flagged zone.
-*   **Per-Tooth Health Reports**: Automatically groups detected anomalies by dental quadrant and provides recommendations for clinical follow-ups.
+## 📜 License & Acknowledgments
 
----
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
-### 5. Forensic Odontology
-Chronological age estimation using dental development indices:
-*   **Developmental Parameters**: Estimates patient age by analyzing indicators:
-    *   Teeth eruption patterns.
-    *   Presence of developing tooth buds.
-    *   Extent of root apex closure.
-    *   Narrowing of pulp chambers.
-    *   Cementum deposition.
-*   **Visual Age Dial**: Displays the estimated age in a visual gauge alongside the calculated min-max age range.
-*   **Metric Contribution Weights**: Lists the weight contribution (%) of each parameter to show how the final age was calculated.
-
----
-
-### 6. Side-by-Side Image Comparison
-Comparative panel for longitudinal patient monitoring:
-*   **Double Panel Layout**: Upload two patient radiographs side-by-side (ideal for before-and-after treatment analysis).
-*   **Variance Tracker**: Identifies clinical changes and highlights the difference in total conditions between the two scans.
-
----
-
-### 7. Interactive Tooth Chart
-A digital dental charting system:
-*   **FDI Numbering Grid**: Renders all 32 permanent teeth in an anatomical arch layout.
-*   **Health Status Coloring**: Colors teeth by clinical status: **Healthy** (Cream), **Pathology** (Red), **Restored** (Blue), and **Missing** (Gray).
-*   **Detail Inspector**: Click any tooth to open a side panel detailing its clinical findings and treatment history.
-
----
-
-### 8. Case History Manager
-A dashboard compiling patient records:
-*   **Records Table**: Logs past diagnostic sessions, thumbnail previews, patient details, and summary results.
-*   **Export Functions**: Generates and downloads patient records database as raw **JSON** or formatted **CSV** sheets.
-*   **Security Erasure**: Employs a double-confirmation delete mechanism to prevent accidental data loss.
-
----
-
-## 💎 Advanced & Nested Features
-
-### 1. 3D Interactive Tooth Viewer
-An interactive 3D simulation of the patient's dentition:
-*   **Procedural 3D Modeling**: Generates anatomical crowns and root structures dynamically for molars, premolars, canines, and incisors, wrapping them inside upper and lower gum arches.
-*   **Dynamic Pathology Mapping**: Connects to the diagnosis engine to highlight affected teeth in 3D using color codes based on severity.
-*   **Hover Interactivity**: Auto-rotates, responds to drag and zoom gestures, and displays floating tooltips identifying specific tooth numbers and clinical statuses.
-
----
-
-### 2. Standalone Medical Report Generator
-Compiles diagnostics and forensics findings into official documentation:
-*   **Zero-Dependency Charts**: Draws visual analytics directly onto canvas surfaces to allow chart exports without external dependencies.
-    *   **Severity Distribution**: Pie chart breaking down findings by classification.
-    *   **Confidence Levels**: Horizontal bar chart mapping the confidence score of each finding.
-*   **Official Document Headers**: Formats headers with reference numbers, generation timestamps, and patient details.
-*   **Export Actions**:
-    *   **Print / Save PDF**: Loads document layouts in the background to launch the browser's native print screen.
-    *   **HTML Package**: Downloads the report, base64 radiograph, and charts compiled into a single offline file.
-
----
-
-## ⚙️ Administrative Controls
-
-### Moderator Admin Panel
-*   **Dashboard Stats**: Visualizes counters of pending, approved, rejected, and total users.
-*   **Active AI Switcher**: Allows administrators to toggle the system's active backend analysis model.
-*   **Account Approval Queue**: Lists registration applications, shows college ID card uploads in an expandable lightbox, and handles access approvals and rejections.
-
-### Super Admin Panel
-*   **Feature Flag Toggles**: Master switches to enable or disable individual pages (Landmarks, Diagnosis, Forensics, Compare, Education) across the platform.
-*   **Registration Blocklist**: Screens college name keywords to automatically block registration attempts from matching entries.
-*   **Credential Provisioning**: Allows direct user and administrator account creation, bypassing the registration queue.
+> Designed & Developed with ❤️ for **Buildathon Showcase**.
