@@ -271,6 +271,4 @@ Viewing and evaluating this repository for educational, judging, or review purpo
 
 ---
 
-> Designed & Developed with ❤️ for **Buildathon Showcase**.
-
-"# Dental-AI-" 
+> 
