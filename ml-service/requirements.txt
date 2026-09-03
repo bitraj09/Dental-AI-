@@ -1,0 +1,12 @@
+numpy
+opencv-python
+torch
+torchvision
+ultralytics
+fastapi
+uvicorn[standard]
+python-multipart
+scikit-image
+pandas
+huggingface-hub
+matplotlib

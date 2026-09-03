@@ -1,0 +1,408 @@
+.page {
+    padding: 40px 0 80px;
+    min-height: 100vh;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.header :global(.section-subtitle) {
+    margin: 12px auto 0;
+    text-align: center;
+}
+
+.workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.imageContainer {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border);
+}
+
+.radiograph {
+    width: 100%;
+    display: block;
+}
+
+/* Bounding boxes */
+.bbox {
+    position: absolute;
+    border: 2px solid;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: box-shadow var(--transition-fast);
+}
+
+.bboxActive {
+    z-index: 20;
+}
+
+.bboxLabel {
+    position: absolute;
+    top: -24px;
+    left: 0;
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.bboxTooltip {
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    min-width: 160px;
+    z-index: 30;
+    box-shadow: var(--shadow-lg);
+}
+
+.tooltipRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.tooltipSev {
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+/* Summary grid */
+.summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.summaryCard {
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all var(--transition-base);
+    cursor: pointer;
+}
+
+.summaryCard:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.summaryHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summaryDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.summaryName {
+    font-weight: 700;
+    font-size: 0.938rem;
+    color: var(--text-primary);
+}
+
+.summarySev {
+    display: inline-block;
+    width: fit-content;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid;
+    text-transform: capitalize;
+}
+
+.summaryRec {
+    font-size: 0.813rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* History */
+.historySection {
+    margin-top: 32px;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+}
+
+.historyTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.938rem;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+}
+
+.historyItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.813rem;
+}
+
+.historyDate {
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.historyFindings {
+    color: var(--primary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.historyNames {
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Per-Tooth Reports */
+.perToothGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.toothReportCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.toothReportHeader {
+    background: rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toothZoneTitle {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.toothConditionCount {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--bg-base);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.toothReportBody {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.toothFindingItem {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border);
+    transition: all var(--transition-short);
+}
+
+.toothFindingItem:hover {
+    transform: translateX(4px);
+}
+
+.toothFindingItem:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.findingTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.findingNameWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.findingDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.findingName {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.findingSeverity {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+    text-transform: capitalize;
+}
+
+.findingRec {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    padding-left: 16px;
+}
+
+@media (max-width: 768px) {
+
+    .summaryGrid,
+    .perToothGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Error Alert */
+.errorAlert {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    color: #ef4444;
+}
+
+.errorIcon {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.errorContent {
+    flex: 1;
+}
+
+.errorTitle {
+    display: block;
+    font-weight: 700;
+    font-size: 0.938rem;
+    margin-bottom: 4px;
+}
+
+.errorText {
+    font-size: 0.813rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.saveAction {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.patientInput {
+    padding: 10px 16px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    min-width: 280px;
+    transition: all 0.2s ease;
+}
+
+.patientInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+@media (max-width: 640px) {
+    .saveAction {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .patientInput {
+        min-width: 0;
+    }
+}
+
+/* Indicator Light */
+.blinkingDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: blink 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+        box-shadow: 0 0 12px currentColor;
+    }
+}

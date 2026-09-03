@@ -1,0 +1,225 @@
+.page {
+    padding-top: calc(var(--nav-height) + 32px);
+    padding-bottom: 60px;
+    min-height: 100vh;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.header :global(.section-subtitle) {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+/* ── Side-by-side grid ── */
+.compareGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    min-height: 320px;
+}
+
+.panelTitle {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panelTitle::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    background: var(--gradient-primary);
+}
+
+/* ── Preview ── */
+.preview img {
+    width: 100%;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+}
+
+.resultsTitle {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.noResults {
+    font-size: 0.813rem;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 12px 0;
+}
+
+/* ── Findings ── */
+.findingList {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.findingItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+}
+
+.findingInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.findingInfo strong {
+    font-size: 0.813rem;
+    color: var(--text-primary);
+}
+
+.meta {
+    font-size: 0.688rem;
+    color: var(--text-muted);
+}
+
+/* ── Actions ── */
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+/* ── Summary ── */
+.summary {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+}
+
+.summaryTitle {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+}
+
+.summaryGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+.summaryCard {
+    text-align: center;
+    padding: 20px;
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+}
+
+.summaryLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+}
+
+.summaryNum {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.summaryMeta {
+    font-size: 0.688rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .compareGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .summaryGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Error Alert */
+.errorAlert {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    color: #ef4444;
+}
+
+.errorIcon {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.errorContent {
+    flex: 1;
+}
+
+.errorTitle {
+    display: block;
+    font-weight: 700;
+    font-size: 0.938rem;
+    margin-bottom: 4px;
+}
+
+.errorText {
+    font-size: 0.813rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}

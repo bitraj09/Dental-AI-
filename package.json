@@ -1,0 +1,41 @@
+{
+  "name": "dental",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "rimraf .next",
+    "dev": "next dev",
+    "dev:clean": "rimraf .next && next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "make-admin": "node scripts/make-admin.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^5.22.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "bcrypt": "^6.0.0",
+    "chart.js": "^4.5.1",
+    "fabric": "^7.2.0",
+    "firebase": "^12.9.0",
+    "framer-motion": "^12.34.3",
+    "next": "16.1.6",
+    "next-auth": "^4.24.13",
+    "react": "19.2.3",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.2.3",
+    "react-dropzone": "^15.0.0",
+    "react-icons": "^5.5.0",
+    "three": "^0.183.1"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "prisma": "^5.22.0",
+    "rimraf": "^6.1.3"
+  }
+}

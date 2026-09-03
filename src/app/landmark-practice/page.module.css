@@ -1,0 +1,655 @@
+.page {
+    padding: 40px 0 80px;
+    min-height: 100vh;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.header :global(.section-subtitle) {
+    margin: 12px auto 0;
+    text-align: center;
+}
+
+/* ─── Model Indicator ─── */
+.modelIndicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    margin-top: 12px;
+}
+
+.blinkingDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: blink-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* ─── Workspace Layout ─── */
+.workspace {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+}
+
+/* ─── Canvas Area ─── */
+.canvasArea {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ─── Challenge Card ─── */
+.challengeCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.challengeCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+}
+
+.challengeHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.challengeTitle {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.challengeCategory {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.landmarkName {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.landmarkHint {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Timer */
+.timerBar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.timerBarInner {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.timerSvg {
+    width: 100%;
+    height: 100%;
+}
+
+.timerText {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    color: var(--primary);
+    transition: color 0.3s ease;
+}
+
+.timerWarn { color: #f59e0b !important; }
+
+.timerDanger {
+    color: #ef4444 !important;
+    animation: timer-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+.timerProgress {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.timerProgressFill {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.challengeActions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+/* ─── Drawing Toolbar ─── */
+.drawingToolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+}
+
+.toolBtn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-main);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+}
+
+.toolBtn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(168, 85, 247, 0.06);
+}
+
+.toolBtn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.toolBtnActive {
+    background: rgba(168, 85, 247, 0.12) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+
+.toolBtnDanger {
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.toolBtnDanger:hover:not(:disabled) {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.pointCounter {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(168, 85, 247, 0.1);
+    padding: 3px 10px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+
+/* ─── Image Container ─── */
+.imageContainer {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #000;
+    border: 2px solid var(--border);
+    transition: border-color 0.2s ease;
+}
+
+.imageContainerDrawing {
+    border-color: var(--primary);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+}
+
+.radiograph {
+    width: 100%;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    position: relative;
+    z-index: 1;
+}
+
+.drawingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 4;
+    pointer-events: auto;
+}
+
+.drawingCursor {
+    cursor: crosshair;
+}
+
+/* ─── Vertex dots ─── */
+.vertex {
+    transition: r 0.15s ease;
+}
+
+.vertex:hover {
+    r: 8;
+    filter: brightness(1.3);
+}
+
+/* ─── Drawing instructions ─── */
+.drawingHint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(168, 85, 247, 0.08);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-weight: 500;
+    animation: hint-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ─── Sidebar Panel ─── */
+.sidebar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    position: sticky;
+    top: calc(var(--nav-height) + 20px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ─── Score Tracker ─── */
+.scoreTracker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--gradient-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.scoreCircle {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.scoreSvg {
+    width: 100%;
+    height: 100%;
+}
+
+.scoreTextWrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scoreValue {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.scoreDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.scoreLabel {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.scoreSub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+/* ─── Result Card ─── */
+.resultCard {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.resultCorrect {
+    border-color: rgba(34, 197, 94, 0.4);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.resultWrong {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.resultPartial {
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.resultHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.resultIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.resultTitleWrap {
+    flex: 1;
+}
+
+.resultTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.resultAccuracy {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.accuracyBar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.accuracyFill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease-out;
+}
+
+.resultFeedback {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.resultMeta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.metaBadge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+/* ─── History List ─── */
+.historySection {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+}
+
+.historyTitle {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.historyList {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.historyItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    transition: background 0.15s ease;
+}
+
+.historyItem:hover {
+    background: var(--bg-secondary);
+}
+
+.historyIcon {
+    flex-shrink: 0;
+}
+
+.historyName {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.historyScore {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* ─── AI Source Badge ─── */
+.aiBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* ─── Start screen ─── */
+.startScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 40px 24px;
+    text-align: center;
+}
+
+.startIcon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.3);
+}
+
+.startTitle {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.startDesc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 480px;
+    line-height: 1.6;
+}
+
+/* Timer Selector */
+.timeSelector {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: rgba(168, 85, 247, 0.04);
+    border: 1px solid rgba(168, 85, 247, 0.12);
+    border-radius: 30px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.timeOption {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: 'Outfit', sans-serif;
+}
+
+.timeOption:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(168, 85, 247, 0.08);
+}
+
+.timeOptionActive {
+    background: var(--gradient-primary);
+    border-color: transparent !important;
+    color: #fff !important;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.25);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1024px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+    }
+}
+
+@media (max-width: 640px) {
+    .challengeActions {
+        flex-direction: column;
+    }
+
+    .drawingToolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pointCounter {
+        margin-left: 0;
+        text-align: center;
+    }
+}

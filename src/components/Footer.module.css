@@ -1,0 +1,63 @@
+.footer {
+    padding: 48px 0 32px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.footerInner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logoIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--gradient-primary);
+    color: #fff;
+}
+
+.logoText {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.tagline {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    max-width: 400px;
+}
+
+.bottom {
+    margin-top: 8px;
+}
+
+.copy {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.813rem;
+    color: var(--text-muted);
+}
+
+.team {
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
