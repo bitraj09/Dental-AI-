@@ -1,4 +1,4 @@
-numpy
+numpy<2
 opencv-python
 torch
 torchvision
@@ -10,3 +10,4 @@ scikit-image
 pandas
 huggingface-hub
 matplotlib
+timm
